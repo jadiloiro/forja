@@ -29,7 +29,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "scheme": "forja",
     "backgroundColor": "#0C0D0F",

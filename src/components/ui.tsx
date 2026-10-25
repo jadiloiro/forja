@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { ComponentProps, ReactNode } from 'react';
+import { ComponentProps, ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,11 +14,17 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import Animated, { cubicBezier } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, font, radius, space } from '../theme';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
+
+// Curva de saída forte: começa rápido, que é quando o usuário está olhando.
+export const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
+
+export const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function tap() {
   Haptics.selectionAsync().catch(() => {});
@@ -103,18 +109,28 @@ export function Button({
 }) {
   const bg = { primary: colors.accent, secondary: colors.surface3, ghost: 'transparent', danger: colors.dangerSoft }[variant];
   const fg = { primary: colors.accentText, secondary: colors.text, ghost: colors.accent, danger: colors.danger }[variant];
+  const [pressed, setPressed] = useState(false);
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       disabled={disabled || loading}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       onPress={() => {
         tap();
         onPress();
       }}
-      style={({ pressed }) => [
+      style={[
         styles.btn,
         small && styles.btnSmall,
-        { backgroundColor: bg, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
+        {
+          backgroundColor: bg,
+          opacity: disabled ? 0.4 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+          transitionProperty: 'transform',
+          transitionDuration: 120,
+          transitionTimingFunction: EASE_OUT,
+        },
         variant === 'ghost' && { paddingHorizontal: space.sm },
         style,
       ]}
@@ -127,7 +143,7 @@ export function Button({
           <Text style={[styles.btnText, small && { fontSize: 14 }, { color: fg }]}>{title}</Text>
         </>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -289,11 +305,25 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   );
 }
 
-export function ProgressBar({ value, color = colors.accent, height = 6 }: { value: number; color?: string; height?: number }) {
+export function ProgressBar({ value, color = colors.accent, height = 6, animated = true }: { value: number; color?: string; height?: number; animated?: boolean }) {
   const pct = Math.max(0, Math.min(1, value));
   return (
     <View style={{ height, borderRadius: height, backgroundColor: colors.surface3, overflow: 'hidden' }}>
-      <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: value > 1.05 ? colors.danger : color, borderRadius: height }} />
+      {/* Preenchimento absoluto e sem filhos: animar width aqui não reflui o layout. */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: `${pct * 100}%`,
+          backgroundColor: value > 1.05 ? colors.danger : color,
+          borderRadius: height,
+          transitionProperty: ['width', 'backgroundColor'],
+          transitionDuration: animated ? 350 : 0,
+          transitionTimingFunction: EASE_OUT,
+        }}
+      />
     </View>
   );
 }

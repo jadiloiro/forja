@@ -1,10 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import Animated, { Easing, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { formatClock } from '../lib/date';
 import { useStore } from '../store/useStore';
-import { colors, radius, space } from '../theme';
+import { colors, family, radius, space } from '../theme';
 import { ProgressBar } from './ui';
 
 export function RestTimer() {
@@ -40,7 +41,11 @@ export function RestTimer() {
   const done = remaining <= 0;
 
   return (
-    <View style={[styles.bar, done && { borderColor: colors.success }]}>
+    <Animated.View
+      entering={FadeInDown.duration(260).easing(Easing.bezier(0.23, 1, 0.32, 1))}
+      exiting={FadeOut.duration(160)}
+      style={[styles.bar, done && { borderColor: colors.success }]}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>{done ? 'Descanso concluído — bora!' : 'Descanso'}</Text>
@@ -57,9 +62,9 @@ export function RestTimer() {
         </Pressable>
       </View>
       <View style={{ marginTop: space.sm }}>
-        <ProgressBar value={total > 0 ? 1 - Math.max(0, remaining) / total : 1} color={done ? colors.success : colors.accent} />
+        <ProgressBar value={total > 0 ? 1 - Math.max(0, remaining) / total : 1} color={done ? colors.success : colors.accent} animated={false} />
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -80,7 +85,7 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   label: { color: colors.textDim, fontSize: 12, fontWeight: '600' },
-  clock: { color: colors.text, fontSize: 28, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  clock: { color: colors.text, fontSize: 36, lineHeight: 40, fontFamily: family.display, fontVariant: ['tabular-nums'] },
   btn: { height: 40, minWidth: 48, paddingHorizontal: 10, borderRadius: radius.md, backgroundColor: colors.surface3, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: colors.text, fontWeight: '700' },
 });

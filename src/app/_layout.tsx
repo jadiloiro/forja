@@ -1,3 +1,4 @@
+import { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold, useFonts } from '@expo-google-fonts/barlow-condensed';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
@@ -21,7 +22,10 @@ const theme = {
 };
 
 export default function RootLayout() {
-  const hydrated = useHydrated();
+  const storeReady = useHydrated();
+  const [fontsLoaded, fontError] = useFonts({ BarlowCondensed_600SemiBold, BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold });
+  // Se a fonte falhar, segue com a do sistema em vez de travar na tela de carregamento.
+  const hydrated = storeReady && (fontsLoaded || !!fontError);
 
   return (
     <SafeAreaProvider>

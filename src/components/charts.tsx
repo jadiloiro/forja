@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LayoutChangeEvent, Text, View } from 'react-native';
+import Animated, { Easing, ReduceMotion, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { colors, font } from '../theme';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export function Ring({
   value,
@@ -21,11 +24,16 @@ export function Ring({
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(1, value));
   const over = value > 1.05;
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.set(withTiming(pct, { duration: 600, easing: Easing.bezier(0.23, 1, 0.32, 1), reduceMotion: ReduceMotion.System }));
+  }, [pct, progress]);
+  const arc = useAnimatedProps(() => ({ strokeDashoffset: c * (1 - progress.get()) }));
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={colors.surface3} strokeWidth={stroke} fill="none" />
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={r}
@@ -34,7 +42,7 @@ export function Ring({
           fill="none"
           strokeLinecap="round"
           strokeDasharray={`${c} ${c}`}
-          strokeDashoffset={c * (1 - pct)}
+          animatedProps={arc}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>

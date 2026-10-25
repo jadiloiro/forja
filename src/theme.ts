@@ -24,10 +24,18 @@ export const colors = {
 export const radius = { sm: 8, md: 12, lg: 18, xl: 24, pill: 999 };
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 
+// Barlow Condensed nos títulos e números de destaque. Uma família por peso:
+// no Android, fontWeight com fonte customizada cai na fonte do sistema.
+export const family = {
+  display: 'BarlowCondensed_800ExtraBold',
+  bold: 'BarlowCondensed_700Bold',
+  semi: 'BarlowCondensed_600SemiBold',
+};
+
 export const font = {
-  display: { fontSize: 30, fontWeight: '800' as const, letterSpacing: -0.6, color: colors.text },
-  h1: { fontSize: 24, fontWeight: '800' as const, letterSpacing: -0.4, color: colors.text },
-  h2: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.2, color: colors.text },
+  display: { fontSize: 36, fontFamily: family.display, letterSpacing: 0.2, color: colors.text },
+  h1: { fontSize: 28, fontFamily: family.display, letterSpacing: 0.2, color: colors.text },
+  h2: { fontSize: 21, fontFamily: family.bold, letterSpacing: 0.2, color: colors.text },
   h3: { fontSize: 15, fontWeight: '700' as const, color: colors.text },
   body: { fontSize: 15, color: colors.text },
   small: { fontSize: 13, color: colors.textDim },

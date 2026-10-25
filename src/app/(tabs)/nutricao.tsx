@@ -10,7 +10,7 @@ import { addDays, dateKey, formatDayLabel } from '../../lib/date';
 import { dayTotals, macrosFor, sumMacros } from '../../lib/nutrition';
 import { FoodEntry, MEALS } from '../../lib/nutritionTypes';
 import { useStore } from '../../store/useStore';
-import { colors, radius, space } from '../../theme';
+import { colors, family, radius, space } from '../../theme';
 
 export default function Nutricao() {
   const [date, setDate] = useState(dateKey());
@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
   modal: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.xl, gap: space.sm },
   gramInput: {
     color: colors.text,
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 44,
+    fontFamily: family.display,
     textAlign: 'center',
     backgroundColor: colors.surface2,
     borderRadius: radius.md,

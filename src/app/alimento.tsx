@@ -8,7 +8,7 @@ import { FOODS } from '../data/foods';
 import { macrosFor, searchFoods } from '../lib/nutrition';
 import { Food, MealKey, MEALS } from '../lib/nutritionTypes';
 import { useStore } from '../store/useStore';
-import { colors, radius, space } from '../theme';
+import { colors, family, radius, space } from '../theme';
 
 export default function Alimento() {
   const params = useLocalSearchParams<{ meal: MealKey; date: string }>();
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: colors.text,
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 48,
+    fontFamily: family.display,
     paddingVertical: space.sm,
     fontVariant: ['tabular-nums'],
   },

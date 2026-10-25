@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { showDialog } from '../components/Dialog';
 import { ExerciseThumb } from '../components/ExerciseMedia';
 import { RestTimer } from '../components/RestTimer';
-import { Button, Card, Empty, IconButton, Stepper, T, tap } from '../components/ui';
+import { AnimatedPressable, Button, Card, EASE_OUT, Empty, IconButton, Stepper, T, tap } from '../components/ui';
 import { formatDuration } from '../lib/date';
 import { fmtRest, repRange } from '../lib/planUtils';
 import { fmtKg, LastPerformance, lastPerformance, sessionVolume, suggest } from '../lib/progression';
@@ -292,14 +292,14 @@ function SetRow({
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       onLongPress={() =>
         showDialog('Remover série?', undefined, [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Remover', style: 'destructive', onPress: () => remove(exUid, idx) },
         ])
       }
-      style={[styles.row, styles.setRow, set.feito && { backgroundColor: colors.successSoft }]}
+      style={[styles.row, styles.setRow, fade, { backgroundColor: set.feito ? colors.successSoft : 'transparent' }]}
     >
       <Pressable onPress={cycleTipo} style={styles.setNum} accessibilityLabel={`Tipo da série: ${SET_TIPO_LABEL[set.tipo]}. Toque para mudar.`}>
         <Text style={{ color: TIPO_COLOR[set.tipo], fontWeight: '800' }}>{label}</Text>
@@ -322,17 +322,17 @@ function SetRow({
       <View style={{ flex: 1, paddingHorizontal: 3 }}>
         <NumInput value={set.reps} onChange={(reps) => update(exUid, idx, { reps })} placeholder={repRange(repMin, repMax)} />
       </View>
-      <Pressable
+      <AnimatedPressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
           complete(exUid, idx);
         }}
-        style={[styles.check, set.feito && { backgroundColor: colors.success }]}
+        style={[styles.check, fade, { backgroundColor: set.feito ? colors.success : colors.surface3 }]}
         accessibilityLabel={set.feito ? 'Desmarcar série' : 'Concluir série'}
       >
         <Ionicons name="checkmark" size={20} color={set.feito ? '#062915' : colors.textMute} />
-      </Pressable>
-    </Pressable>
+      </AnimatedPressable>
+    </AnimatedPressable>
   );
 }
 
@@ -375,6 +375,9 @@ function FinishModal({
     </Modal>
   );
 }
+
+// Fora do StyleSheet: create() não aceita as propriedades de transição do Reanimated.
+const fade = { transitionProperty: 'backgroundColor', transitionDuration: 150, transitionTimingFunction: EASE_OUT } as const;
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm },
