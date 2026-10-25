@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { View } from 'react-native';
+import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 
 import { showDialog } from '../../components/Dialog';
 import { ExerciseThumb } from '../../components/ExerciseMedia';
 import { Badge, Button, Card, Empty, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { formatDateTime, formatDuration } from '../../lib/date';
-import { e1rm, personalRecords, workingSets } from '../../lib/progression';
+import { e1rm, fmtKg, personalRecords, round, workingSets } from '../../lib/progression';
 import { SessionExercise } from '../../lib/trainingTypes';
 import { useExercise, useStore } from '../../store/useStore';
 import { colors, space } from '../../theme';
@@ -19,14 +20,20 @@ export default function HistoricoDetalhe() {
   const rec = history.find((h) => h.id === id);
 
   const prs = useMemo(() => {
-    if (!rec) return new Set<string>();
+    const out = new Map<string, NewPR>();
+    if (!rec) return out;
     const idx = history.findIndex((h) => h.id === rec.id);
     const before = personalRecords(history.slice(idx + 1));
-    const out = new Set<string>();
     for (const e of rec.exercicios) {
-      const best = Math.max(0, ...workingSets(e).map((s) => (s.peso != null && s.reps ? e1rm(s.peso, s.reps) : 0)));
-      const prev = before[e.exerciseId]?.e1rm ?? 0;
-      if (best > 0 && best > prev + 0.01 && before[e.exerciseId]) out.add(e.exerciseId);
+      let top: NewPR | undefined;
+      for (const s of workingSets(e)) {
+        if (s.peso == null || !s.reps) continue;
+        const est = e1rm(s.peso, s.reps);
+        if (!top || est > top.e1rm) top = { exerciseId: e.exerciseId, peso: s.peso, reps: s.reps, e1rm: est, ganho: 0 };
+      }
+      const prev = before[e.exerciseId]?.e1rm;
+      // Primeira vez no exercício não conta como recorde: não há com o que comparar.
+      if (top && prev != null && top.e1rm > prev + 0.01) out.set(e.exerciseId, { ...top, ganho: top.e1rm - prev });
     }
     return out;
   }, [history, rec]);
@@ -70,13 +77,27 @@ export default function HistoricoDetalhe() {
         }}
       />
       {novo ? (
-        <View style={{ alignItems: 'center', gap: space.sm, marginBottom: space.lg }}>
+        <Animated.View entering={FadeInDown.duration(400).easing(EASE_OUT_FN)} style={{ alignItems: 'center', gap: space.sm, marginBottom: space.lg }}>
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="trophy" size={30} color={colors.accent} />
           </View>
-          <T v="h1">Treino concluído!</T>
-          {prs.size > 0 && <T style={{ color: colors.success }}>{prs.size} novo{prs.size > 1 ? 's' : ''} recorde{prs.size > 1 ? 's' : ''} pessoal{prs.size > 1 ? 'is' : ''} 🔥</T>}
-        </View>
+          <T v="display">Treino concluído!</T>
+          {prs.size > 0 && (
+            <T style={{ color: colors.success }}>
+              {prs.size} novo{prs.size > 1 ? 's' : ''} recorde{prs.size > 1 ? 's' : ''} pessoa{prs.size > 1 ? 'is' : 'l'}
+            </T>
+          )}
+        </Animated.View>
+      ) : null}
+
+      {novo && prs.size > 0 ? (
+        <Card style={{ marginBottom: space.lg, borderColor: colors.success, gap: space.md }}>
+          {[...prs.values()].map((pr, i) => (
+            <Animated.View key={pr.exerciseId} entering={FadeInDown.delay(250 + i * 90).duration(350).easing(EASE_OUT_FN)}>
+              <PRRow pr={pr} />
+            </Animated.View>
+          ))}
+        </Card>
       ) : null}
 
       <T v="h2">{rec.nome}</T>
@@ -103,6 +124,37 @@ export default function HistoricoDetalhe() {
 
       {novo ? <Button title="Concluir" style={{ marginTop: space.xl }} onPress={() => router.dismissTo('/(tabs)')} /> : null}
     </Screen>
+  );
+}
+
+interface NewPR {
+  exerciseId: string;
+  peso: number;
+  reps: number;
+  e1rm: number;
+  /** Quanto o 1RM estimado subiu em relação ao recorde anterior. */
+  ganho: number;
+}
+
+const EASE_OUT_FN = Easing.bezier(0.23, 1, 0.32, 1);
+
+function PRRow({ pr }: { pr: NewPR }) {
+  const ex = useExercise(pr.exerciseId);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+      <Ionicons name="trending-up" size={20} color={colors.success} />
+      <View style={{ flex: 1 }}>
+        <T v="h3" numberOfLines={1}>
+          {ex?.nome ?? 'Exercício'}
+        </T>
+        <T v="small">
+          {fmtKg(pr.peso)} × {pr.reps} · 1RM est. {fmtKg(round(pr.e1rm, 0.5))}
+        </T>
+      </View>
+      <T v="h2" style={{ color: colors.success }}>
+        +{fmtKg(round(pr.ganho, 0.5))}
+      </T>
+    </View>
   );
 }
 

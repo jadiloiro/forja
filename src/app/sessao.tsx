@@ -8,10 +8,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { showDialog } from '../components/Dialog';
 import { ExerciseThumb } from '../components/ExerciseMedia';
+import { PlateCalculator } from '../components/PlateCalculator';
 import { RestTimer } from '../components/RestTimer';
 import { AnimatedPressable, Button, Card, EASE_OUT, Empty, IconButton, Stepper, T, tap } from '../components/ui';
 import { formatDuration } from '../lib/date';
 import { fmtRest, repRange } from '../lib/planUtils';
+import { usesBar } from '../lib/plates';
 import { fmtKg, LastPerformance, lastPerformance, sessionVolume, suggest } from '../lib/progression';
 import { SessionExercise, SET_TIPO_LABEL, SetLog, SetTipo } from '../lib/trainingTypes';
 import { useExercise, useStore } from '../store/useStore';
@@ -135,7 +137,9 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
   const removeEx = useStore((s) => s.removeSessionExercise);
   const moveEx = useStore((s) => s.moveSessionExercise);
   const updateEx = useStore((s) => s.updateSessionExercise);
+  const updateSet = useStore((s) => s.updateSet);
   const [menu, setMenu] = useState(false);
+  const [plates, setPlates] = useState(false);
 
   const last = useMemo(() => lastPerformance(history, item.exerciseId), [history, item.exerciseId]);
   const sug = useMemo(() => suggest(last, item.repMin, item.repMax, item.exerciseId, settings), [last, item.repMin, item.repMax, item.exerciseId, settings]);
@@ -172,6 +176,18 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
               router.push({ pathname: '/selecionar-exercicio', params: { target: 'session', mode: 'swap', exUid: item.uid, current: item.exerciseId } });
             }}
           />
+          {usesBar(ex?.equipamento) && (
+            <Button
+              small
+              variant="secondary"
+              icon="barbell-outline"
+              title="Anilhas"
+              onPress={() => {
+                setMenu(false);
+                setPlates(true);
+              }}
+            />
+          )}
           <IconButton icon="arrow-up" label="Subir" onPress={() => moveEx(item.uid, -1)} color={index > 0 ? colors.textDim : colors.surface3} />
           <IconButton icon="arrow-down" label="Descer" onPress={() => moveEx(item.uid, 1)} color={index < count - 1 ? colors.textDim : colors.surface3} />
           <IconButton
@@ -223,6 +239,13 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
         const label = s.tipo === 'normal' ? String(++workIdx) : TIPO_SHORT[s.tipo];
         return <SetRow key={i} exUid={item.uid} idx={i} set={s} label={label} last={last} repMin={item.repMin} repMax={item.repMax} />;
       })}
+      <PlateCalculator
+        visible={plates}
+        equipamento={ex?.equipamento}
+        initialKg={item.sets.find((s) => !s.feito && s.peso)?.peso ?? sug?.peso ?? last?.sets[0]?.peso ?? 20}
+        onClose={() => setPlates(false)}
+        onApply={(peso) => item.sets.forEach((s, i) => !s.feito && s.tipo !== 'aquecimento' && updateSet(item.uid, i, { peso }))}
+      />
       <Pressable style={styles.addSet} onPress={() => { tap(); addSet(item.uid); }}>
         <Ionicons name="add" size={16} color={colors.textDim} />
         <T v="small" style={{ fontWeight: '600' }}>

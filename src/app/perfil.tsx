@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Share, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 
 import {
   ActivityStep,
@@ -16,6 +16,7 @@ import {
 } from '../components/ProfileForm';
 import { showDialog } from '../components/Dialog';
 import { Button, Card, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
+import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
 import { computeTargets } from '../lib/nutrition';
 import { exportBackup, useStore } from '../store/useStore';
 import { colors, space } from '../theme';
@@ -29,7 +30,27 @@ export default function Perfil() {
   const resetAll = useStore((s) => s.resetAll);
   const [d, setD] = useState<ProfileDraft>(toDraft(profile));
   const [backupText, setBackupText] = useState('');
+  const [busy, setBusy] = useState(false);
   const set = (patch: Partial<ProfileDraft>) => setD((x) => ({ ...x, ...patch }));
+
+  const restore = (json: string) =>
+    showDialog('Restaurar backup?', 'Todos os dados atuais serão substituídos.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Restaurar',
+        style: 'destructive',
+        onPress: () => {
+          try {
+            importBackup(json);
+            setBackupText('');
+            showDialog('Pronto', 'Backup restaurado.');
+            router.back();
+          } catch (e) {
+            showDialog('Não foi possível restaurar', e instanceof SyntaxError ? 'O arquivo não é um backup válido.' : e instanceof Error ? e.message : 'Backup inválido.');
+          }
+        },
+      },
+    ]);
   const err = draftErrors(d);
   const preview = !err ? computeTargets(fromDraft(d)) : undefined;
 
@@ -76,6 +97,7 @@ export default function Perfil() {
           <Stepper label="Barra / máquina" value={settings.incrementoBarraKg} step={0.5} min={0.5} max={10} suffix="kg" onChange={(v) => updateSettings({ incrementoBarraKg: v })} />
           <Stepper label="Halteres" value={settings.incrementoHalterKg} step={0.5} min={0.5} max={10} suffix="kg" onChange={(v) => updateSettings({ incrementoHalterKg: v })} />
         </View>
+        <Stepper label="Peso da barra olímpica" value={settings.pesoBarraKg ?? 20} step={2.5} min={5} max={25} suffix="kg" onChange={(v) => updateSettings({ pesoBarraKg: v })} />
         <T v="small">Quanto o app sugere subir quando você bate o topo da faixa de repetições em todas as séries.</T>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <T>Vibrar no fim do descanso</T>
@@ -90,38 +112,37 @@ export default function Perfil() {
 
       <SectionHeader title="Backup dos dados" />
       <Card style={{ gap: space.md }}>
-        <T v="small">Seus dados ficam só neste aparelho. Exporte um backup para guardar ou levar para outro celular.</T>
+        <T v="small">Seus dados ficam só neste aparelho. Salve um arquivo de backup no Drive, e-mail ou WhatsApp para não perder o histórico.</T>
         <Button
-          title="Exportar backup"
-          icon="share-outline"
-          variant="secondary"
-          onPress={() => Share.share({ message: exportBackup(), title: 'Backup Forja' }).catch(() => {})}
+          title="Salvar arquivo de backup"
+          icon="download-outline"
+          loading={busy}
+          onPress={async () => {
+            setBusy(true);
+            try {
+              await saveBackupFile(exportBackup());
+            } catch (e) {
+              showDialog('Não foi possível salvar', e instanceof Error ? e.message : undefined);
+            } finally {
+              setBusy(false);
+            }
+          }}
         />
-        <Field label="Restaurar: cole o backup aqui" value={backupText} onChangeText={setBackupText} multiline style={{ maxHeight: 120 }} />
         <Button
-          title="Restaurar backup"
+          title="Restaurar de um arquivo"
+          icon="folder-open-outline"
           variant="secondary"
-          disabled={!backupText.trim()}
-          onPress={() =>
-            showDialog('Restaurar backup?', 'Todos os dados atuais serão substituídos.', [
-              { text: 'Cancelar', style: 'cancel' },
-              {
-                text: 'Restaurar',
-                style: 'destructive',
-                onPress: () => {
-                  try {
-                    importBackup(backupText.trim());
-                    setBackupText('');
-                    showDialog('Pronto', 'Backup restaurado.');
-                    router.back();
-                  } catch (e) {
-                    showDialog('Não foi possível restaurar', e instanceof Error ? e.message : 'Backup inválido.');
-                  }
-                },
-              },
-            ])
-          }
+          onPress={async () => {
+            try {
+              const json = await pickBackupFile();
+              if (json) restore(json);
+            } catch (e) {
+              showDialog('Não foi possível abrir o arquivo', e instanceof Error ? e.message : undefined);
+            }
+          }}
         />
+        <Field label="Ou cole o texto do backup" value={backupText} onChangeText={setBackupText} multiline style={{ maxHeight: 120 }} />
+        <Button title="Restaurar texto colado" variant="secondary" small disabled={!backupText.trim()} onPress={() => restore(backupText.trim())} />
       </Card>
 
       <Button

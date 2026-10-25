@@ -120,4 +120,6 @@ export interface Settings {
   incrementoBarraKg: number;
   incrementoHalterKg: number;
   vibrarDescanso: boolean;
+  /** Opcional: backups e dados salvos antes da calculadora de anilhas não têm o campo. */
+  pesoBarraKg?: number;
 }
