@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { formatClock } from '../lib/date';
+import { setRestTimerOnScreen } from '../lib/restNotifications';
 import { useStore } from '../store/useStore';
 import { colors, family, radius, space } from '../theme';
 import { ProgressBar } from './ui';
@@ -16,6 +17,11 @@ export function RestTimer() {
   const clear = useStore((s) => s.clearRest);
   const [now, setNow] = useState(() => Date.now());
   const fired = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    setRestTimerOnScreen(true);
+    return () => setRestTimerOnScreen(false);
+  }, []);
 
   useEffect(() => {
     if (!ate) return;

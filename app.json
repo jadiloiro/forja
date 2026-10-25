@@ -21,7 +21,8 @@
       "package": "app.forja.treino",
       "versionCode": 1,
       "permissions": [
-        "VIBRATE"
+        "VIBRATE",
+        "SCHEDULE_EXACT_ALARM"
       ]
     },
     "web": {
@@ -31,7 +32,14 @@
       "expo-router",
       "expo-image",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false,
+          "color": "#FF6A2B"
+        }
+      ]
     ],
     "scheme": "forja",
     "backgroundColor": "#0C0D0F",

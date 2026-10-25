@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AppState, Platform, Switch, View } from 'react-native';
 
 import {
   ActivityStep,
@@ -18,6 +18,7 @@ import { showDialog } from '../components/Dialog';
 import { Button, Card, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
 import { computeTargets } from '../lib/nutrition';
+import { exactAlarmGranted, requestExactAlarm } from '../lib/restNotifications';
 import { exportBackup, useStore } from '../store/useStore';
 import { colors, space } from '../theme';
 
@@ -31,7 +32,16 @@ export default function Perfil() {
   const [d, setD] = useState<ProfileDraft>(toDraft(profile));
   const [backupText, setBackupText] = useState('');
   const [busy, setBusy] = useState(false);
-  const set = (patch: Partial<ProfileDraft>) => setD((x) => ({ ...x, ...patch }));
+  const [exactOk, setExactOk] = useState<boolean>();
+  // O pedido de alarme exato abre as configurações do sistema e a promise pode nunca
+  // resolver; por isso o estado é relido sempre que o app volta ao primeiro plano.
+  useEffect(() => {
+    const check = () => exactAlarmGranted().then(setExactOk).catch(() => {});
+    check();
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check());
+    return () => sub.remove();
+  }, []);
+  const set =(patch: Partial<ProfileDraft>) => setD((x) => ({ ...x, ...patch }));
 
   const restore = (json: string) =>
     showDialog('Restaurar backup?', 'Todos os dados atuais serão substituídos.', [
@@ -97,17 +107,29 @@ export default function Perfil() {
           <Stepper label="Barra / máquina" value={settings.incrementoBarraKg} step={0.5} min={0.5} max={10} suffix="kg" onChange={(v) => updateSettings({ incrementoBarraKg: v })} />
           <Stepper label="Halteres" value={settings.incrementoHalterKg} step={0.5} min={0.5} max={10} suffix="kg" onChange={(v) => updateSettings({ incrementoHalterKg: v })} />
         </View>
-        <Stepper label="Peso da barra olímpica" value={settings.pesoBarraKg ?? 20} step={2.5} min={5} max={25} suffix="kg" onChange={(v) => updateSettings({ pesoBarraKg: v })} />
         <T v="small">Quanto o app sugere subir quando você bate o topo da faixa de repetições em todas as séries.</T>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <T>Vibrar no fim do descanso</T>
-          <Switch
-            value={settings.vibrarDescanso}
-            onValueChange={(v) => updateSettings({ vibrarDescanso: v })}
-            trackColor={{ true: colors.accent, false: colors.surface3 }}
-            thumbColor="#fff"
+        <Stepper label="Peso da barra olímpica (calculadora de anilhas)" value={settings.pesoBarraKg ?? 20} step={2.5} min={5} max={25} suffix="kg" onChange={(v) => updateSettings({ pesoBarraKg: v })} />
+      </Card>
+
+      <SectionHeader title="Descanso" />
+      <Card style={{ gap: space.md }}>
+        <ToggleRow label="Vibrar no fim do descanso" value={settings.vibrarDescanso} onChange={(v) => updateSettings({ vibrarDescanso: v })} />
+        {Platform.OS !== 'web' && (
+          <ToggleRow
+            label="Avisar com o app minimizado"
+            hint="Notificação quando o descanso acaba, mesmo com a tela bloqueada."
+            value={settings.notificarDescanso ?? true}
+            onChange={(v) => updateSettings({ notificarDescanso: v })}
           />
-        </View>
+        )}
+        {(settings.notificarDescanso ?? true) && exactOk === false && (
+          <View style={{ gap: space.sm }}>
+            <T v="small" style={{ color: colors.warn }}>
+              O Android pode atrasar o aviso alguns minutos. Permita &quot;alarmes e lembretes&quot; para ele chegar na hora.
+            </T>
+            <Button small variant="secondary" icon="alarm-outline" title="Permitir alarmes exatos" onPress={() => requestExactAlarm().catch(() => {})} />
+          </View>
+        )}
       </Card>
 
       <SectionHeader title="Backup dos dados" />
@@ -168,5 +190,17 @@ export default function Perfil() {
         As estimativas não substituem orientação de profissional de educação física ou nutricionista.
       </T>
     </Screen>
+  );
+}
+
+function ToggleRow({ label, hint, value, onChange }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+      <View style={{ flex: 1, gap: 2 }}>
+        <T>{label}</T>
+        {hint ? <T v="small">{hint}</T> : null}
+      </View>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.accent, false: colors.surface3 }} thumbColor="#fff" />
+    </View>
   );
 }

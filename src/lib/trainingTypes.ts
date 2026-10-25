@@ -122,4 +122,6 @@ export interface Settings {
   vibrarDescanso: boolean;
   /** Opcional: backups e dados salvos antes da calculadora de anilhas não têm o campo. */
   pesoBarraKg?: number;
+  /** Notificação no fim do descanso com o app minimizado. Ausente = ligado. */
+  notificarDescanso?: boolean;
 }
