@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { Ring } from '../../components/charts';
-import { Button, Card, Field, IconButton, ProgressBar, Screen, SectionHeader, T } from '../../components/ui';
+import { MacroBars, WaterCard } from '../../components/nutrition';
+import { Button, Card, Field, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { dateKey, weekStart } from '../../lib/date';
 import { dayTotals } from '../../lib/nutrition';
 import { estimateMinutes, muscleSummary } from '../../lib/planUtils';
@@ -23,7 +24,6 @@ export default function Hoje() {
   const targets = useStore((s) => s.targets);
   const today = dateKey();
   const log = useStore((s) => s.nutrition[today]);
-  const addWater = useStore((s) => s.addWater);
   const bodyWeights = useStore((s) => s.bodyWeights);
   const logBodyWeight = useStore((s) => s.logBodyWeight);
   const [peso, setPeso] = useState('');
@@ -130,26 +130,9 @@ export default function Hoje() {
                 kcal restantes
               </T>
             </Ring>
-            <View style={{ flex: 1, gap: space.sm }}>
-              <Macro label="Proteína" v={totals.p} t={targets.p} color={colors.protein} />
-              <Macro label="Carboidrato" v={totals.c} t={targets.c} color={colors.carb} />
-              <Macro label="Gordura" v={totals.g} t={targets.g} color={colors.fat} />
-            </View>
+                <MacroBars totals={totals} targets={targets} />
           </Card>
-          <Card style={{ marginTop: space.md, gap: space.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-              <Ionicons name="water" size={18} color={colors.water} />
-              <T v="h3" style={{ flex: 1 }}>
-                Água · {((log?.aguaMl ?? 0) / 1000).toFixed(2).replace('.', ',')} / {(targets.aguaMl / 1000).toFixed(1).replace('.', ',')} L
-              </T>
-            </View>
-            <View style={{ flexDirection: 'row', gap: space.sm }}>
-              <Button small variant="secondary" title="−250 ml" style={{ flex: 1 }} onPress={() => addWater(today, -250)} />
-              <Button small variant="secondary" title="+250 ml" style={{ flex: 1 }} onPress={() => addWater(today, 250)} />
-              <Button small variant="secondary" title="+500 ml" style={{ flex: 1 }} onPress={() => addWater(today, 500)} />
-            </View>
-            <ProgressBar value={(log?.aguaMl ?? 0) / targets.aguaMl} color={colors.water} />
-          </Card>
+          <WaterCard date={today} style={{ marginTop: space.md }} />
         </>
       )}
 
@@ -172,18 +155,3 @@ export default function Hoje() {
   );
 }
 
-function Macro({ label, v, t, color }: { label: string; v: number; t: number; color: string }) {
-  return (
-    <View style={{ gap: 4 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T v="small" style={{ fontSize: 12 }}>
-          {label}
-        </T>
-        <T v="small" style={{ fontSize: 12, color: colors.text }}>
-          {Math.round(v)}/{t} g
-        </T>
-      </View>
-      <ProgressBar value={t ? v / t : 0} color={color} />
-    </View>
-  );
-}

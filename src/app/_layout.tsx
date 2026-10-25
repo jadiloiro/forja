@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { DialogHost } from '../components/Dialog';
 import { useHydrated } from '../store/useStore';
 import { colors } from '../theme';
 
@@ -55,6 +56,7 @@ export default function RootLayout() {
             <Stack.Screen name="historico/[id]" options={{ title: 'Treino realizado' }} />
           </Stack>
         )}
+        {hydrated && <DialogHost />}
       </ThemeProvider>
     </SafeAreaProvider>
   );

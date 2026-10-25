@@ -3,9 +3,10 @@ import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { showDialog } from '../components/Dialog';
 import { ExerciseThumb } from '../components/ExerciseMedia';
 import { RestTimer } from '../components/RestTimer';
 import { Button, Card, Empty, IconButton, Stepper, T, tap } from '../components/ui';
@@ -47,7 +48,7 @@ export default function Sessao() {
   const total = session.exercicios.reduce((a, e) => a + e.sets.length, 0);
 
   const askDiscard = () =>
-    Alert.alert('Descartar treino?', 'Nada deste treino será salvo.', [
+    showDialog('Descartar treino?', 'Nada deste treino será salvo.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Descartar',
@@ -178,7 +179,7 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
             label="Remover"
             color={colors.danger}
             onPress={() =>
-              Alert.alert('Remover exercício?', ex?.nome, [
+              showDialog('Remover exercício?', ex?.nome, [
                 { text: 'Cancelar', style: 'cancel' },
                 { text: 'Remover', style: 'destructive', onPress: () => removeEx(item.uid) },
               ])
@@ -293,7 +294,7 @@ function SetRow({
   return (
     <Pressable
       onLongPress={() =>
-        Alert.alert('Remover série?', undefined, [
+        showDialog('Remover série?', undefined, [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Remover', style: 'destructive', onPress: () => remove(exUid, idx) },
         ])

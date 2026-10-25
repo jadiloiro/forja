@@ -1,10 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { showDialog } from '../../components/Dialog';
 import { Ring } from '../../components/charts';
-import { Button, Card, IconButton, ProgressBar, Screen, T, tap } from '../../components/ui';
+import { MacroBars, WaterCard } from '../../components/nutrition';
+import { Button, Card, IconButton, Screen, T, tap } from '../../components/ui';
 import { addDays, dateKey, formatDayLabel } from '../../lib/date';
 import { dayTotals, macrosFor, sumMacros } from '../../lib/nutrition';
 import { FoodEntry, MEALS } from '../../lib/nutritionTypes';
@@ -16,7 +17,6 @@ export default function Nutricao() {
   const log = useStore((s) => s.nutrition[date]);
   const prevLog = useStore((s) => s.nutrition[addDays(date, -1)]);
   const targets = useStore((s) => s.targets);
-  const addWater = useStore((s) => s.addWater);
   const copyMeal = useStore((s) => s.copyMeal);
   const removeEntry = useStore((s) => s.removeFoodEntry);
   const [editing, setEditing] = useState<FoodEntry | null>(null);
@@ -48,11 +48,7 @@ export default function Nutricao() {
             de {targets.kcal} kcal
           </T>
         </Ring>
-        <View style={{ flex: 1, gap: space.sm }}>
-          <MacroBar label="Proteína" v={totals.p} t={targets.p} color={colors.protein} />
-          <MacroBar label="Carboidrato" v={totals.c} t={targets.c} color={colors.carb} />
-          <MacroBar label="Gordura" v={totals.g} t={targets.g} color={colors.fat} />
-        </View>
+        <MacroBars totals={totals} targets={targets} />
       </Card>
 
       <View style={{ gap: space.md, marginTop: space.lg }}>
@@ -85,7 +81,7 @@ export default function Nutricao() {
                     setEditing(e);
                   }}
                   onLongPress={() =>
-                    Alert.alert('Remover alimento?', e.snapshot.nome, [
+                    showDialog('Remover alimento?', e.snapshot.nome, [
                       { text: 'Cancelar', style: 'cancel' },
                       { text: 'Remover', style: 'destructive', onPress: () => removeEntry(date, e.id) },
                     ])
@@ -117,20 +113,7 @@ export default function Nutricao() {
         })}
       </View>
 
-      <Card style={{ marginTop: space.md, gap: space.sm }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-          <Ionicons name="water" size={18} color={colors.water} />
-          <T v="h3" style={{ flex: 1 }}>
-            {((log?.aguaMl ?? 0) / 1000).toFixed(2).replace('.', ',')} / {(targets.aguaMl / 1000).toFixed(1).replace('.', ',')} L
-          </T>
-        </View>
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          <Button small variant="secondary" title="−250 ml" style={{ flex: 1 }} onPress={() => addWater(date, -250)} />
-          <Button small variant="secondary" title="+250 ml" style={{ flex: 1 }} onPress={() => addWater(date, 250)} />
-          <Button small variant="secondary" title="+500 ml" style={{ flex: 1 }} onPress={() => addWater(date, 500)} />
-        </View>
-        <ProgressBar value={(log?.aguaMl ?? 0) / targets.aguaMl} color={colors.water} />
-      </Card>
+      <WaterCard date={date} style={{ marginTop: space.md }} />
 
       <T v="small" style={{ marginTop: space.md, textAlign: 'center', fontSize: 12 }}>
         Toque num alimento para ajustar a quantidade · segure para remover
@@ -141,21 +124,6 @@ export default function Nutricao() {
   );
 }
 
-function MacroBar({ label, v, t, color }: { label: string; v: number; t: number; color: string }) {
-  return (
-    <View style={{ gap: 4 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T v="small" style={{ fontSize: 12 }}>
-          {label}
-        </T>
-        <T v="small" style={{ fontSize: 12, color: colors.text }}>
-          {Math.round(v)}/{t} g
-        </T>
-      </View>
-      <ProgressBar value={t ? v / t : 0} color={color} />
-    </View>
-  );
-}
 
 function EditEntryModal({ entry, date, onClose }: { entry: FoodEntry | null; date: string; onClose: () => void }) {
   const update = useStore((s) => s.updateFoodEntry);

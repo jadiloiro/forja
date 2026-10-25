@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
+import { showDialog } from '../../components/Dialog';
 import { ExerciseThumb } from '../../components/ExerciseMedia';
 import { Badge, Button, Card, Empty, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { formatDateTime, formatDuration } from '../../lib/date';
@@ -52,7 +53,7 @@ export default function HistoricoDetalhe() {
               color={colors.danger}
               label="Excluir registro"
               onPress={() =>
-                Alert.alert('Excluir este treino do histórico?', undefined, [
+                showDialog('Excluir este treino do histórico?', undefined, [
                   { text: 'Cancelar', style: 'cancel' },
                   {
                     text: 'Excluir',

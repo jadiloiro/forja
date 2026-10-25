@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
+import { showDialog } from '../components/Dialog';
 import { Button, Card, Field, IconButton, Screen, SectionHeader, T } from '../components/ui';
 import { uid } from '../lib/id';
 import { useStore } from '../store/useStore';
@@ -75,7 +76,7 @@ export default function NovoAlimento() {
                   color={colors.danger}
                   label="Excluir alimento"
                   onPress={() =>
-                    Alert.alert('Excluir alimento?', f.nome, [
+                    showDialog('Excluir alimento?', f.nome, [
                       { text: 'Cancelar', style: 'cancel' },
                       { text: 'Excluir', style: 'destructive', onPress: () => del(f.id) },
                     ])

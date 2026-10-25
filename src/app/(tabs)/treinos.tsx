@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { showDialog } from '../../components/Dialog';
 import { Badge, Button, Card, Empty, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { estimateMinutes, muscleSummary, totalSets } from '../../lib/planUtils';
 import { useActivePlan, useStore } from '../../store/useStore';
@@ -17,7 +18,7 @@ export default function Treinos() {
 
   const start = (dayId?: string) => {
     if (session) {
-      Alert.alert('Treino em andamento', 'Você já tem um treino aberto. Quer continuar nele?', [
+      showDialog('Treino em andamento', 'Você já tem um treino aberto. Quer continuar nele?', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Continuar treino', onPress: () => router.push('/sessao') },
       ]);
@@ -28,7 +29,7 @@ export default function Treinos() {
   };
 
   const regenerate = () =>
-    Alert.alert(
+    showDialog(
       'Gerar novo plano?',
       'Um novo plano será criado a partir do seu perfil. O plano atual continua salvo em "Meus planos".',
       [

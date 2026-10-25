@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
+import { showDialog } from '../../components/Dialog';
 import { LineChart } from '../../components/charts';
 import { ExerciseAnimation } from '../../components/ExerciseMedia';
 import { Badge, Card, Empty, IconButton, Screen, SectionHeader, T } from '../../components/ui';
@@ -44,7 +45,7 @@ export default function ExercicioDetalhe() {
                     label="Excluir"
                     color={colors.danger}
                     onPress={() =>
-                      Alert.alert('Excluir exercício?', 'Ele continuará aparecendo no histórico, mas sairá da biblioteca.', [
+                      showDialog('Excluir exercício?', 'Ele continuará aparecendo no histórico, mas sairá da biblioteca.', [
                         { text: 'Cancelar', style: 'cancel' },
                         {
                           text: 'Excluir',

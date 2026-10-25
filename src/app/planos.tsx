@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 
+import { showDialog } from '../components/Dialog';
 import { Badge, Button, Card, Empty, Field, IconButton, Screen, SectionHeader, T } from '../components/ui';
 import { formatShortDate } from '../lib/date';
 import { useStore } from '../store/useStore';
@@ -67,7 +68,7 @@ export default function Planos() {
                   label="Excluir"
                   color={colors.danger}
                   onPress={() =>
-                    Alert.alert('Excluir plano?', `"${p.nome}" será apagado. O histórico de treinos não é afetado.`, [
+                    showDialog('Excluir plano?', `"${p.nome}" será apagado. O histórico de treinos não é afetado.`, [
                       { text: 'Cancelar', style: 'cancel' },
                       { text: 'Excluir', style: 'destructive', onPress: () => del(p.id) },
                     ])

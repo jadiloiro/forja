@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Share, Switch, View } from 'react-native';
+import { Share, Switch, View } from 'react-native';
 
 import {
   ActivityStep,
@@ -14,6 +14,7 @@ import {
   ScheduleStep,
   toDraft,
 } from '../components/ProfileForm';
+import { showDialog } from '../components/Dialog';
 import { Button, Card, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { computeTargets } from '../lib/nutrition';
 import { exportBackup, useStore } from '../store/useStore';
@@ -33,8 +34,8 @@ export default function Perfil() {
   const preview = !err ? computeTargets(fromDraft(d)) : undefined;
 
   const save = () => {
-    if (err) return Alert.alert('Confira os dados', err);
-    Alert.alert('Salvar perfil', 'Quer gerar um novo plano de treino com esses dados? O plano atual continua salvo.', [
+    if (err) return showDialog('Confira os dados', err);
+    showDialog('Salvar perfil', 'Quer gerar um novo plano de treino com esses dados? O plano atual continua salvo.', [
       { text: 'Só salvar', onPress: () => { saveProfile(fromDraft(d)); router.back(); } },
       { text: 'Salvar e gerar plano', onPress: () => { saveProfile(fromDraft(d), { regenerate: true }); router.back(); } },
     ]);
@@ -102,7 +103,7 @@ export default function Perfil() {
           variant="secondary"
           disabled={!backupText.trim()}
           onPress={() =>
-            Alert.alert('Restaurar backup?', 'Todos os dados atuais serão substituídos.', [
+            showDialog('Restaurar backup?', 'Todos os dados atuais serão substituídos.', [
               { text: 'Cancelar', style: 'cancel' },
               {
                 text: 'Restaurar',
@@ -111,10 +112,10 @@ export default function Perfil() {
                   try {
                     importBackup(backupText.trim());
                     setBackupText('');
-                    Alert.alert('Pronto', 'Backup restaurado.');
+                    showDialog('Pronto', 'Backup restaurado.');
                     router.back();
                   } catch (e) {
-                    Alert.alert('Não foi possível restaurar', e instanceof Error ? e.message : 'Backup inválido.');
+                    showDialog('Não foi possível restaurar', e instanceof Error ? e.message : 'Backup inválido.');
                   }
                 },
               },
@@ -128,7 +129,7 @@ export default function Perfil() {
         variant="danger"
         style={{ marginTop: space.xl }}
         onPress={() =>
-          Alert.alert('Apagar tudo?', 'Perfil, planos, histórico e diário alimentar serão apagados. Não dá para desfazer.', [
+          showDialog('Apagar tudo?', 'Perfil, planos, histórico e diário alimentar serão apagados. Não dá para desfazer.', [
             { text: 'Cancelar', style: 'cancel' },
             {
               text: 'Apagar tudo',

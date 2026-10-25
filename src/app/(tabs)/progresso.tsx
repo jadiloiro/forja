@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { showDialog } from '../../components/Dialog';
 import { BarChart, LineChart } from '../../components/charts';
 import { ExerciseThumb } from '../../components/ExerciseMedia';
 import { Card, Chip, Empty, Screen, SectionHeader, T } from '../../components/ui';
@@ -201,7 +202,7 @@ function Corpo() {
           <Pressable
             key={b.data}
             onLongPress={() =>
-              Alert.alert('Apagar registro?', `${formatShortDate(fromKey(b.data).toISOString())}: ${fmtKg(b.pesoKg)}`, [
+              showDialog('Apagar registro?', `${formatShortDate(fromKey(b.data).toISOString())}: ${fmtKg(b.pesoKg)}`, [
                 { text: 'Cancelar', style: 'cancel' },
                 { text: 'Apagar', style: 'destructive', onPress: () => remove(b.data) },
               ])

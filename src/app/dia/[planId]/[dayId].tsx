@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 
+import { showDialog } from '../../../components/Dialog';
 import { ExerciseThumb } from '../../../components/ExerciseMedia';
 import { Button, Card, Empty, Field, IconButton, Screen, SectionHeader, Stepper, T, tap } from '../../../components/ui';
 import { GROUP_LABEL } from '../../../data/types';
@@ -32,7 +33,7 @@ export default function DayEditor() {
   }
 
   const del = () =>
-    Alert.alert('Excluir treino?', `"${day.nome}" será removido do plano.`, [
+    showDialog('Excluir treino?', `"${day.nome}" será removido do plano.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Excluir',
@@ -46,7 +47,7 @@ export default function DayEditor() {
 
   const start = () => {
     if (session) {
-      Alert.alert('Treino em andamento', 'Finalize ou descarte o treino aberto antes de iniciar outro.', [
+      showDialog('Treino em andamento', 'Finalize ou descarte o treino aberto antes de iniciar outro.', [
         { text: 'OK', style: 'cancel' },
         { text: 'Abrir treino atual', onPress: () => router.push('/sessao') },
       ]);
