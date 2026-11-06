@@ -1,4 +1,4 @@
-import { addDays, dateKey, formatClock, formatDateTime, formatDayLabel, formatDuration, formatShortDate, fromKey, weekStart } from '../date';
+import { addDays, dateKey, formatClock, formatDateTime, formatDayLabel, formatDuration, formatShortDate, formatTime, fromKey, weekStart } from '../date';
 
 describe('chaves de data', () => {
   test('dateKey usa o dia local, com zeros à esquerda', () => {
@@ -48,6 +48,10 @@ describe('formatação', () => {
 
   test('formatDateTime', () => {
     expect(formatDateTime(iso)).toBe('segunda, 5 jan · 09:07');
+  });
+
+  test('formatTime usa o fuso local, com zeros à esquerda', () => {
+    expect(formatTime(new Date(2026, 0, 5, 9, 7).getTime())).toBe('09:07');
   });
 
   test.each([

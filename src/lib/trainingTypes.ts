@@ -1,4 +1,5 @@
 import { MuscleGroup } from '../data/types';
+import type { RestSoundId } from './restSounds';
 
 export type Sexo = 'M' | 'F';
 export type Nivel = 'iniciante' | 'intermediario' | 'avancado';
@@ -124,4 +125,10 @@ export interface Settings {
   pesoBarraKg?: number;
   /** Notificação no fim do descanso com o app minimizado. Ausente = ligado. */
   notificarDescanso?: boolean;
+  /** Tocar som no fim do descanso. Ausente = ligado. */
+  somDescanso?: boolean;
+  /** Som escolhido no Perfil. Ausente = padrão. */
+  somDescansoId?: RestSoundId;
+  /** Toque curto 10 s antes do fim. Ausente = desligado. */
+  avisoDezSeg?: boolean;
 }

@@ -1,10 +1,12 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOut } from 'react-native-reanimated';
 
 import { formatClock } from '../lib/date';
+import { playRestSound } from '../lib/restAlarm';
 import { setRestTimerOnScreen } from '../lib/restNotifications';
+import { AVISO_SEG, restSoundOf, shouldAlertNow } from '../lib/restSounds';
 import { useStore } from '../store/useStore';
 import { colors, family, radius, space } from '../theme';
 import { ProgressBar } from './ui';
@@ -13,10 +15,13 @@ export function RestTimer() {
   const ate = useStore((s) => s.session?.descansoAte);
   const total = useStore((s) => s.session?.descansoTotal ?? 0);
   const vibrar = useStore((s) => s.settings.vibrarDescanso);
+  const som = useStore((s) => restSoundOf(s.settings));
+  const aviso = useStore((s) => s.settings.avisoDezSeg ?? false);
   const adjust = useStore((s) => s.adjustRest);
   const clear = useStore((s) => s.clearRest);
   const [now, setNow] = useState(() => Date.now());
   const fired = useRef<number | undefined>(undefined);
+  const warned = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     setRestTimerOnScreen(true);
@@ -32,16 +37,27 @@ export function RestTimer() {
   const remaining = ate ? (ate - now) / 1000 : 0;
 
   useEffect(() => {
+    if (!aviso || !ate || warned.current === ate || total <= AVISO_SEG) return;
+    if (shouldAlertNow(ate - AVISO_SEG * 1000, Date.now(), AppState.currentState)) {
+      warned.current = ate;
+      if (som) playRestSound('aviso');
+    }
+  }, [ate, now, aviso, som, total]);
+
+  useEffect(() => {
     if (ate && remaining <= 0 && fired.current !== ate) {
       fired.current = ate;
-      if (vibrar) {
-        Vibration.vibrate([0, 350, 150, 350]);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      if (shouldAlertNow(ate, Date.now(), AppState.currentState)) {
+        if (som) playRestSound(som);
+        if (vibrar) {
+          Vibration.vibrate([0, 350, 150, 350]);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        }
       }
       const t = setTimeout(clear, 2500);
       return () => clearTimeout(t);
     }
-  }, [ate, remaining, vibrar, clear]);
+  }, [ate, remaining, vibrar, som, clear]);
 
   if (!ate) return null;
   const done = remaining <= 0;

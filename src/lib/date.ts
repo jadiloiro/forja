@@ -41,6 +41,12 @@ export function formatDateTime(iso: string): string {
   return `${DIAS[d.getDay()]}, ${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
 }
 
+/** HH:mm no fuso local */
+export function formatTime(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export function formatDuration(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(total / 3600);

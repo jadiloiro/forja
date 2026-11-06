@@ -37,7 +37,21 @@
         "expo-notifications",
         {
           "enableRemoteNotifications": false,
-          "color": "#FF6A2B"
+          "color": "#FF6A2B",
+          "sounds": [
+            "./assets/sounds/sino.wav",
+            "./assets/sounds/bipes.wav",
+            "./assets/sounds/gongo.wav",
+            "./assets/sounds/aviso.wav"
+          ]
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
         }
       ]
     ],
