@@ -144,7 +144,7 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   small?: boolean;
 }) {
-  const bg = { primary: colors.accent, secondary: colors.surface3, ghost: 'transparent', danger: colors.dangerSoft }[variant];
+  const bg = { primary: colors.accentFill, secondary: colors.surface3, ghost: 'transparent', danger: colors.dangerSoft }[variant];
   const fg = { primary: colors.accentText, secondary: colors.text, ghost: colors.accent, danger: colors.danger }[variant];
   return (
     <AnimatedPressable

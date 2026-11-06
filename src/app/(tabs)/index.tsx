@@ -111,7 +111,7 @@ export default function Hoje() {
                 borderRadius: 16,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: d.done ? colors.accent : colors.surface3,
+                backgroundColor: d.done ? colors.accentFill : colors.surface3,
                 borderWidth: d.today ? 2 : 0,
                 borderColor: colors.accent,
               }}
