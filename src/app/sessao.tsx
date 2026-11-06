@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { Easing, FadeIn, FadeOut, LayoutAnimationConfig, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { showDialog } from '../components/Dialog';
@@ -85,16 +86,23 @@ export default function Sessao() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: 160, gap: space.lg }} keyboardShouldPersistTaps="handled">
-          {session.exercicios.map((e, i) => (
-            <ExerciseBlock key={e.uid} item={e} index={i} count={session.exercicios.length} />
-          ))}
-          <Button
-            title="Adicionar exercício"
-            icon="add"
-            variant="secondary"
-            onPress={() => router.push({ pathname: '/selecionar-exercicio', params: { target: 'session', mode: 'add' } })}
-          />
-          <Button title="Descartar treino" variant="ghost" onPress={askDiscard} style={{ alignSelf: 'center' }} />
+          {/* skipEntering: ao abrir o treino nada entra animado, só o que for adicionado depois. */}
+          <LayoutAnimationConfig skipEntering>
+            {session.exercicios.map((e, i) => (
+              <Animated.View key={e.uid} layout={REFLOW} entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)}>
+                <ExerciseBlock item={e} index={i} count={session.exercicios.length} />
+              </Animated.View>
+            ))}
+          </LayoutAnimationConfig>
+          <Animated.View layout={REFLOW} style={{ gap: space.lg }}>
+            <Button
+              title="Adicionar exercício"
+              icon="add"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/selecionar-exercicio', params: { target: 'session', mode: 'add' } })}
+            />
+            <Button title="Descartar treino" variant="ghost" onPress={askDiscard} style={{ alignSelf: 'center' }} />
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -129,7 +137,8 @@ const TIPO_ORDER: SetTipo[] = ['normal', 'aquecimento', 'dropset', 'falha'];
 const TIPO_SHORT: Record<SetTipo, string> = { normal: '', aquecimento: 'A', dropset: 'D', falha: 'F' };
 const TIPO_COLOR: Record<SetTipo, string> = { normal: colors.text, aquecimento: colors.warn, dropset: colors.protein, falha: colors.danger };
 
-function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: number; count: number }) {
+// memo aqui e no SetRow: digitar em uma série só renderiza de novo aquela série e o bloco dela.
+const ExerciseBlock = memo(function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: number; count: number }) {
   const ex = useExercise(item.exerciseId);
   const history = useStore((s) => s.history);
   const settings = useStore((s) => s.settings);
@@ -164,7 +173,7 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
       </View>
 
       {menu && (
-        <View style={styles.menu}>
+        <Animated.View entering={FadeIn.duration(150)} style={styles.menu}>
           <Button small variant="secondary" icon="play-circle-outline" title="Como fazer" onPress={() => router.push({ pathname: '/exercicio/[id]', params: { id: item.exerciseId } })} />
           <Button
             small
@@ -204,7 +213,7 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
           <View style={{ width: '100%', marginTop: space.sm }}>
             <Stepper label="Descanso deste exercício" value={item.descansoSeg} step={15} min={0} max={600} suffix="s" onChange={(descansoSeg) => updateEx(item.uid, { descansoSeg })} />
           </View>
-        </View>
+        </Animated.View>
       )}
 
       {(sug || item.notas) && (
@@ -237,7 +246,12 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
       </View>
       {item.sets.map((s, i) => {
         const label = s.tipo === 'normal' ? String(++workIdx) : TIPO_SHORT[s.tipo];
-        return <SetRow key={i} exUid={item.uid} idx={i} set={s} label={label} last={last} repMin={item.repMin} repMax={item.repMax} />;
+        // A chave é a posição, porque séries não têm id: sem `exiting`, que animaria a última linha em vez da removida.
+        return (
+          <Animated.View key={i} layout={REFLOW} entering={FadeIn.duration(180)}>
+            <SetRow exUid={item.uid} idx={i} set={s} label={label} last={last} repMin={item.repMin} repMax={item.repMax} />
+          </Animated.View>
+        );
       })}
       <PlateCalculator
         visible={plates}
@@ -246,15 +260,17 @@ function ExerciseBlock({ item, index, count }: { item: SessionExercise; index: n
         onClose={() => setPlates(false)}
         onApply={(peso) => item.sets.forEach((s, i) => !s.feito && s.tipo !== 'aquecimento' && updateSet(item.uid, i, { peso }))}
       />
-      <Pressable style={styles.addSet} onPress={() => { tap(); addSet(item.uid); }}>
-        <Ionicons name="add" size={16} color={colors.textDim} />
-        <T v="small" style={{ fontWeight: '600' }}>
-          Série
-        </T>
-      </Pressable>
+      <Animated.View layout={REFLOW}>
+        <AnimatedPressable style={styles.addSet} onPress={() => { tap(); addSet(item.uid); }}>
+          <Ionicons name="add" size={16} color={colors.textDim} />
+          <T v="small" style={{ fontWeight: '600' }}>
+            Série
+          </T>
+        </AnimatedPressable>
+      </Animated.View>
     </Card>
   );
-}
+});
 
 function parseNum(t: string): number | null {
   const n = Number(t.replace(',', '.'));
@@ -286,7 +302,7 @@ function NumInput({ value, onChange, placeholder, decimal }: { value: number | n
   );
 }
 
-function SetRow({
+const SetRow = memo(function SetRow({
   exUid,
   idx,
   set,
@@ -306,6 +322,7 @@ function SetRow({
   const update = useStore((s) => s.updateSet);
   const complete = useStore((s) => s.completeSet);
   const remove = useStore((s) => s.removeSet);
+  const reduced = useReducedMotion();
   const prev = last?.sets[idx];
 
   const cycleTipo = () => {
@@ -315,15 +332,29 @@ function SetRow({
   };
 
   return (
-    <AnimatedPressable
+    <Pressable
       onLongPress={() =>
         showDialog('Remover série?', undefined, [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Remover', style: 'destructive', onPress: () => remove(exUid, idx) },
         ])
       }
-      style={[styles.row, styles.setRow, fade, { backgroundColor: set.feito ? colors.successSoft : 'transparent' }]}
+      style={[styles.row, styles.setRow]}
     >
+      {/* A linha "preenche" ao concluir. Absoluto e sem filhos: animar width aqui não reflui o layout. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.setFill,
+          {
+            width: set.feito || reduced ? '100%' : '0%',
+            opacity: set.feito ? 1 : 0,
+            transitionProperty: ['width', 'opacity'],
+            transitionDuration: 220,
+            transitionTimingFunction: EASE_OUT,
+          },
+        ]}
+      />
       <Pressable onPress={cycleTipo} style={styles.setNum} accessibilityLabel={`Tipo da série: ${SET_TIPO_LABEL[set.tipo]}. Toque para mudar.`}>
         <Text style={{ color: TIPO_COLOR[set.tipo], fontWeight: '800' }}>{label}</Text>
       </Pressable>
@@ -346,18 +377,30 @@ function SetRow({
         <NumInput value={set.reps} onChange={(reps) => update(exUid, idx, { reps })} placeholder={repRange(repMin, repMax)} />
       </View>
       <AnimatedPressable
+        scaleTo={0.9}
+        animateColor
+        hitSlop={6}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
           complete(exUid, idx);
         }}
-        style={[styles.check, fade, { backgroundColor: set.feito ? colors.success : colors.surface3 }]}
+        style={[styles.check, { backgroundColor: set.feito ? colors.success : colors.surface3 }]}
         accessibilityLabel={set.feito ? 'Desmarcar série' : 'Concluir série'}
       >
-        <Ionicons name="checkmark" size={20} color={set.feito ? '#062915' : colors.textMute} />
+        <Animated.View
+          style={{
+            transform: [{ scale: set.feito || reduced ? 1 : 0.8 }],
+            transitionProperty: 'transform',
+            transitionDuration: 180,
+            transitionTimingFunction: EASE_OUT,
+          }}
+        >
+          <Ionicons name="checkmark" size={20} color={set.feito ? '#062915' : colors.textMute} />
+        </Animated.View>
       </AnimatedPressable>
-    </AnimatedPressable>
+    </Pressable>
   );
-}
+});
 
 function FinishModal({
   visible,
@@ -399,8 +442,7 @@ function FinishModal({
   );
 }
 
-// Fora do StyleSheet: create() não aceita as propriedades de transição do Reanimated.
-const fade = { transitionProperty: 'backgroundColor', transitionDuration: 150, transitionTimingFunction: EASE_OUT } as const;
+const REFLOW = LinearTransition.duration(200).easing(Easing.bezier(0.23, 1, 0.32, 1));
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm },
@@ -416,7 +458,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center' },
   th: { color: colors.textMute, fontSize: 10, fontWeight: '700', letterSpacing: 0.6 },
-  setRow: { marginTop: 6, paddingVertical: 4, borderRadius: radius.sm },
+  setRow: { marginTop: 6, paddingVertical: 4 },
+  setFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: radius.sm, backgroundColor: colors.successSoft },
   setNum: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   input: {
     backgroundColor: colors.surface2,

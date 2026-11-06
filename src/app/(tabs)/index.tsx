@@ -18,7 +18,9 @@ const DIAS_CURTOS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 export default function Hoje() {
   const profile = useStore((s) => s.profile)!;
   const plan = useActivePlan();
-  const session = useStore((s) => s.session);
+  // Só o nome: esta aba fica montada sob o treino e não deve renderizar a cada dígito digitado nele.
+  const hasSession = useStore((s) => !!s.session);
+  const sessionNome = useStore((s) => s.session?.nome);
   const history = useStore((s) => s.history);
   const startSession = useStore((s) => s.startSession);
   const targets = useStore((s) => s.targets);
@@ -56,10 +58,10 @@ export default function Hoje() {
         <IconButton icon="settings-outline" label="Perfil e configurações" onPress={() => router.push('/perfil')} />
       </View>
 
-      {session ? (
+      {hasSession ? (
         <Card style={{ marginTop: space.lg, borderColor: colors.accent, borderWidth: 1, gap: space.sm }}>
           <T v="tiny">Treino em andamento</T>
-          <T v="h1">{session.nome}</T>
+          <T v="h1">{sessionNome}</T>
           <Button title="Continuar treino" icon="play" onPress={() => router.push('/sessao')} />
         </Card>
       ) : next ? (

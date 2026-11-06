@@ -14,7 +14,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import Animated, { cubicBezier } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, font, radius, space } from '../theme';
@@ -24,10 +24,40 @@ export type IconName = ComponentProps<typeof Ionicons>['name'];
 // Curva de saída forte: começa rápido, que é quando o usuário está olhando.
 export const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
 
-export const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const PressableBase = Animated.createAnimatedComponent(Pressable);
 
 export function tap() {
   Haptics.selectionAsync().catch(() => {});
+}
+
+/**
+ * Reduz levemente ao encostar o dedo. As transições CSS do Reanimated ignoram a opção
+ * "reduzir animações" do sistema, então com ela ligada a escala fica de fora.
+ */
+export function AnimatedPressable({
+  scaleTo = 0.97,
+  animateColor,
+  style,
+  ...props
+}: Omit<ComponentProps<typeof PressableBase>, 'onPressIn' | 'onPressOut'> & { scaleTo?: number; animateColor?: boolean }) {
+  const reduced = useReducedMotion();
+  const [pressed, setPressed] = useState(false);
+  return (
+    <PressableBase
+      {...props}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={[
+        style,
+        {
+          transform: [{ scale: pressed && !reduced ? scaleTo : 1 }],
+          transitionProperty: animateColor ? ['transform', 'backgroundColor'] : 'transform',
+          transitionDuration: 120,
+          transitionTimingFunction: EASE_OUT,
+        },
+      ]}
+    />
+  );
 }
 
 export function Screen({
@@ -78,9 +108,16 @@ export function T({
 export function Card({ children, style, onPress }: { children: ReactNode; style?: StyleProp<ViewStyle>; onPress?: () => void }) {
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }, style]}>
+      <AnimatedPressable
+        scaleTo={0.98}
+        onPress={() => {
+          tap();
+          onPress();
+        }}
+        style={[styles.card, style]}
+      >
         {children}
-      </Pressable>
+      </AnimatedPressable>
     );
   }
   return <View style={[styles.card, style]}>{children}</View>;
@@ -109,13 +146,10 @@ export function Button({
 }) {
   const bg = { primary: colors.accent, secondary: colors.surface3, ghost: 'transparent', danger: colors.dangerSoft }[variant];
   const fg = { primary: colors.accentText, secondary: colors.text, ghost: colors.accent, danger: colors.danger }[variant];
-  const [pressed, setPressed] = useState(false);
   return (
     <AnimatedPressable
       accessibilityRole="button"
       disabled={disabled || loading}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
       onPress={() => {
         tap();
         onPress();
@@ -123,14 +157,7 @@ export function Button({
       style={[
         styles.btn,
         small && styles.btnSmall,
-        {
-          backgroundColor: bg,
-          opacity: disabled ? 0.4 : 1,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
-          transitionProperty: 'transform',
-          transitionDuration: 120,
-          transitionTimingFunction: EASE_OUT,
-        },
+        { backgroundColor: bg, opacity: disabled ? 0.4 : 1 },
         variant === 'ghost' && { paddingHorizontal: space.sm },
         style,
       ]}
@@ -297,7 +324,13 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
     <View style={styles.sectionHeader}>
       <Text style={font.tiny}>{title}</Text>
       {action && onAction ? (
-        <Pressable onPress={onAction} hitSlop={8}>
+        <Pressable
+          onPress={() => {
+            tap();
+            onAction();
+          }}
+          hitSlop={8}
+        >
           <Text style={[font.small, { color: colors.accent, fontWeight: '600' }]}>{action}</Text>
         </Pressable>
       ) : null}
@@ -305,7 +338,8 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   );
 }
 
-export function ProgressBar({ value, color = colors.accent, height = 6, animated = true }: { value: number; color?: string; height?: number; animated?: boolean }) {
+export function ProgressBar({ value, color = colors.accent, height = 6 }: { value: number; color?: string; height?: number }) {
+  const reduced = useReducedMotion();
   const pct = Math.max(0, Math.min(1, value));
   return (
     <View style={{ height, borderRadius: height, backgroundColor: colors.surface3, overflow: 'hidden' }}>
@@ -319,8 +353,8 @@ export function ProgressBar({ value, color = colors.accent, height = 6, animated
           width: `${pct * 100}%`,
           backgroundColor: value > 1.05 ? colors.danger : color,
           borderRadius: height,
-          transitionProperty: ['width', 'backgroundColor'],
-          transitionDuration: animated ? 350 : 0,
+          transitionProperty: reduced ? 'backgroundColor' : ['width', 'backgroundColor'],
+          transitionDuration: 350,
           transitionTimingFunction: EASE_OUT,
         }}
       />

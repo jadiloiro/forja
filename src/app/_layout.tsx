@@ -3,11 +3,12 @@ import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DialogHost } from '../components/Dialog';
 import { startRestNotifications } from '../lib/restNotifications';
-import { useHydrated } from '../store/useStore';
+import { startPersistFlush, useHydrated } from '../store/useStore';
 import { colors } from '../theme';
 
 const theme = {
@@ -30,6 +31,11 @@ export default function RootLayout() {
   const hydrated = storeReady && (fontsLoaded || !!fontError);
 
   useEffect(() => (storeReady ? startRestNotifications() : undefined), [storeReady]);
+  useEffect(startPersistFlush, []);
+
+  // Transições nativas: telas entram pela direita e modais por baixo; com "reduzir animações", só fade.
+  const reduced = useReducedMotion();
+  const modal = { presentation: 'modal', animation: reduced ? 'fade' : 'slide_from_bottom' } as const;
 
   return (
     <SafeAreaProvider>
@@ -47,17 +53,18 @@ export default function RootLayout() {
               headerTitleStyle: { fontWeight: '700' },
               headerShadowVisible: false,
               contentStyle: { backgroundColor: colors.bg },
+              animation: reduced ? 'fade' : 'slide_from_right',
             }}
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-            <Stack.Screen name="sessao" options={{ headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
+            <Stack.Screen name="sessao" options={{ headerShown: false, gestureEnabled: false, ...modal, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="exercicio/[id]" options={{ title: '' }} />
             <Stack.Screen name="dia/[planId]/[dayId]" options={{ title: 'Editar treino' }} />
-            <Stack.Screen name="selecionar-exercicio" options={{ title: 'Escolher exercício', presentation: 'modal' }} />
-            <Stack.Screen name="novo-exercicio" options={{ title: 'Exercício personalizado', presentation: 'modal' }} />
-            <Stack.Screen name="alimento" options={{ title: 'Adicionar alimento', presentation: 'modal' }} />
-            <Stack.Screen name="novo-alimento" options={{ title: 'Alimento personalizado', presentation: 'modal' }} />
+            <Stack.Screen name="selecionar-exercicio" options={{ title: 'Escolher exercício', ...modal }} />
+            <Stack.Screen name="novo-exercicio" options={{ title: 'Exercício personalizado', ...modal }} />
+            <Stack.Screen name="alimento" options={{ title: 'Adicionar alimento', ...modal }} />
+            <Stack.Screen name="novo-alimento" options={{ title: 'Alimento personalizado', ...modal }} />
             <Stack.Screen name="metas" options={{ title: 'Metas de nutrição' }} />
             <Stack.Screen name="perfil" options={{ title: 'Perfil e configurações' }} />
             <Stack.Screen name="planos" options={{ title: 'Meus planos' }} />
