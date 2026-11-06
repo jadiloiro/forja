@@ -5,7 +5,7 @@ App Android (Expo / React Native) para montar, executar e acompanhar treinos de 
 ## O que o app faz
 
 **Treino**
-- Questionário inicial (objetivo, nível, dias por semana, tempo por treino, prioridades) que **gera o plano sozinho**: Full body, Push/Pull/Legs, Superior/Inferior, híbrido ou ABCDE, conforme os dias e o nível.
+- Questionário inicial (objetivo, nível, dias por semana, tempo por treino, prioridades) que **gera o plano sozinho**: Full body, Push/Pull/Legs, Superior/Inferior, híbrido ou ABCDE, conforme os dias e o nível. Evita exercícios que costumam sobrecarregar as regiões marcadas como lesionadas.
 - Séries, repetições e descanso definidos pelo objetivo (hipertrofia, força, emagrecimento, manutenção). Músculos prioritários ganham uma série extra.
 - **Controle total do plano**: renomear, adicionar/remover/duplicar/reordenar treinos e exercícios, trocar exercício (com alternativas recomendadas), ajustar séries, faixa de repetições, descanso e notas. Vários planos salvos, um ativo.
 - **95 exercícios de academia** com demonstração animada (posição inicial ↔ final, com controle de velocidade), passo a passo em português e erros comuns. Dá para criar exercícios personalizados.

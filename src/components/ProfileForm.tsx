@@ -1,49 +1,26 @@
 import { View } from 'react-native';
 
 import { ALL_GROUPS, GROUP_LABEL, MuscleGroup } from '../data/types';
-import { ATIVIDADE_LABEL, Atividade, NIVEL_LABEL, Nivel, OBJETIVO_LABEL, Objetivo, Profile } from '../lib/trainingTypes';
+import { ProfileDraft } from '../lib/profileDraft';
+import {
+  APETITE_LABEL,
+  Apetite,
+  ATIVIDADE_LABEL,
+  Atividade,
+  Medicamento,
+  MEDICAMENTO_ATALHO_LABEL,
+  MedicamentoAtalho,
+  NIVEL_LABEL,
+  Nivel,
+  OBJETIVO_LABEL,
+  Objetivo,
+  REGIAO_LABEL,
+  RegiaoCorporal,
+  RITMO_LABEL,
+  Ritmo,
+} from '../lib/trainingTypes';
 import { space } from '../theme';
-import { Chip, Field, OptionList, T } from './ui';
-
-export type ProfileDraft = Omit<Profile, 'idade' | 'alturaCm' | 'pesoKg'> & { idade: string; alturaCm: string; pesoKg: string };
-
-export function toDraft(p?: Profile): ProfileDraft {
-  return {
-    nome: p?.nome ?? '',
-    sexo: p?.sexo ?? 'M',
-    idade: p ? String(p.idade) : '',
-    alturaCm: p ? String(p.alturaCm) : '',
-    pesoKg: p ? String(p.pesoKg).replace('.', ',') : '',
-    nivel: p?.nivel ?? 'iniciante',
-    objetivo: p?.objetivo ?? 'hipertrofia',
-    diasSemana: p?.diasSemana ?? 4,
-    duracaoMin: p?.duracaoMin ?? 60,
-    atividade: p?.atividade ?? 'leve',
-    prioridades: p?.prioridades ?? [],
-  };
-}
-
-const parse = (s: string) => Number(s.replace(',', '.'));
-
-export function draftErrors(d: ProfileDraft): string | undefined {
-  const idade = parse(d.idade);
-  const altura = parse(d.alturaCm);
-  const peso = parse(d.pesoKg);
-  if (!(idade >= 14 && idade <= 90)) return 'Informe uma idade entre 14 e 90 anos.';
-  if (!(altura >= 120 && altura <= 230)) return 'Informe a altura em centímetros (ex.: 175).';
-  if (!(peso >= 35 && peso <= 250)) return 'Informe o peso em kg (ex.: 78,5).';
-  return undefined;
-}
-
-export function fromDraft(d: ProfileDraft): Profile {
-  return {
-    ...d,
-    nome: d.nome.trim(),
-    idade: Math.round(parse(d.idade)),
-    alturaCm: Math.round(parse(d.alturaCm)),
-    pesoKg: Math.round(parse(d.pesoKg) * 10) / 10,
-  };
-}
+import { Card, Chip, Field, IconButton, OptionList, T } from './ui';
 
 type Set = (patch: Partial<ProfileDraft>) => void;
 
@@ -132,6 +109,89 @@ export function ActivityStep({ d, set }: { d: ProfileDraft; set: Set }) {
       onChange={(atividade) => set({ atividade })}
       options={(Object.keys(ATIVIDADE_LABEL) as Atividade[]).map((k) => ({ key: k, label: ATIVIDADE_LABEL[k] }))}
     />
+  );
+}
+
+/** Chips de escolha única, que desmarcam ao tocar de novo: o campo é opcional. */
+function OptionalChoice<K extends string>({ label, labels, value, onChange }: { label: string; labels: Record<K, string>; value?: K; onChange: (k?: K) => void }) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <T v="tiny">{label}</T>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+        {(Object.keys(labels) as K[]).map((k) => (
+          <Chip key={k} label={labels[k]} selected={value === k} onPress={() => onChange(value === k ? undefined : k)} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export function TargetStep({ d, set }: { d: ProfileDraft; set: Set }) {
+  return (
+    <View style={{ gap: space.lg }}>
+      <T v="small">Opcional. Deixe em branco o que não souber.</T>
+      <View style={{ flexDirection: 'row', gap: space.md }}>
+        <Field style={{ flex: 1 }} label="Meta de peso" keyboardType="decimal-pad" value={d.pesoMetaKg} onChangeText={(pesoMetaKg) => set({ pesoMetaKg })} suffix="kg" />
+        <Field style={{ flex: 1 }} label="Prazo desejado" keyboardType="number-pad" value={d.prazoSemanas} onChangeText={(prazoSemanas) => set({ prazoSemanas })} suffix="semanas" />
+      </View>
+      <OptionalChoice<Ritmo> label="Ritmo para chegar lá" labels={RITMO_LABEL} value={d.ritmo} onChange={(ritmo) => set({ ritmo })} />
+    </View>
+  );
+}
+
+export function HealthStep({ d, set }: { d: ProfileDraft; set: Set }) {
+  const update = (i: number, patch: Partial<Medicamento>) => set({ medicamentos: d.medicamentos.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
+  const remove = (i: number) => set({ medicamentos: d.medicamentos.filter((_, j) => j !== i) });
+  const toggleAtalho = (atalho: MedicamentoAtalho) => {
+    const i = d.medicamentos.findIndex((m) => m.atalho === atalho);
+    if (i >= 0) remove(i);
+    else set({ medicamentos: [...d.medicamentos, { nome: MEDICAMENTO_ATALHO_LABEL[atalho], atalho }] });
+  };
+  return (
+    <View style={{ gap: space.lg }}>
+      <T v="small">Opcional. Fica salvo só neste aparelho e também vai no arquivo de backup.</T>
+      <View style={{ gap: space.sm }}>
+        <T v="tiny">Medicamentos em uso</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+          {(Object.keys(MEDICAMENTO_ATALHO_LABEL) as MedicamentoAtalho[]).map((k) => (
+            <Chip key={k} label={MEDICAMENTO_ATALHO_LABEL[k]} selected={d.medicamentos.some((m) => m.atalho === k)} onPress={() => toggleAtalho(k)} />
+          ))}
+          <Chip label="Outro" icon="add" onPress={() => set({ medicamentos: [...d.medicamentos, { nome: '' }] })} />
+        </View>
+      </View>
+      {d.medicamentos.map((m, i) => (
+        <Card key={i} style={{ gap: space.md, padding: space.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.sm }}>
+            <Field style={{ flex: 1 }} label="Nome" value={m.nome} onChangeText={(nome) => update(i, { nome })} />
+            <IconButton icon="close" label="Remover medicamento" onPress={() => remove(i)} style={{ marginBottom: 6 }} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: space.md }}>
+            <Field style={{ flex: 1 }} label="Dose" value={m.dose ?? ''} onChangeText={(dose) => update(i, { dose })} />
+            <Field style={{ flex: 1 }} label="Frequência" value={m.frequencia ?? ''} onChangeText={(frequencia) => update(i, { frequencia })} />
+          </View>
+        </Card>
+      ))}
+      <Field label="Condições de saúde relevantes" value={d.condicoes} onChangeText={(condicoes) => set({ condicoes })} multiline placeholder="Ex.: hipertensão, diabetes" />
+    </View>
+  );
+}
+
+export function BodyStep({ d, set }: { d: ProfileDraft; set: Set }) {
+  const toggle = (r: RegiaoCorporal) => set({ lesoes: d.lesoes.includes(r) ? d.lesoes.filter((x) => x !== r) : [...d.lesoes, r] });
+  return (
+    <View style={{ gap: space.xl }}>
+      <View style={{ gap: space.sm }}>
+        <T v="tiny">Lesões ou limitações</T>
+        <T v="small">Opcional. O plano gerado evita exercícios que costumam sobrecarregar as regiões marcadas. Isso não substitui a orientação de um profissional.</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+          {(Object.keys(REGIAO_LABEL) as RegiaoCorporal[]).map((r) => (
+            <Chip key={r} label={REGIAO_LABEL[r]} selected={d.lesoes.includes(r)} onPress={() => toggle(r)} />
+          ))}
+        </View>
+      </View>
+      <Field label="Horas de sono por noite" keyboardType="decimal-pad" value={d.sonoHoras} onChangeText={(sonoHoras) => set({ sonoHoras })} suffix="horas" />
+      <OptionalChoice<Apetite> label="Fome e apetite no dia a dia" labels={APETITE_LABEL} value={d.apetite} onChange={(apetite) => set({ apetite })} />
+    </View>
   );
 }
 

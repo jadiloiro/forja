@@ -2,22 +2,12 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Platform, Switch, View } from 'react-native';
 
-import {
-  ActivityStep,
-  BasicsStep,
-  draftErrors,
-  fromDraft,
-  GoalStep,
-  LevelStep,
-  PriorityStep,
-  ProfileDraft,
-  ScheduleStep,
-  toDraft,
-} from '../components/ProfileForm';
+import { ActivityStep, BasicsStep, BodyStep, GoalStep, HealthStep, LevelStep, PriorityStep, ScheduleStep, TargetStep } from '../components/ProfileForm';
 import { showDialog } from '../components/Dialog';
 import { Button, Card, Chip, ChipRow, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
 import { computeTargets } from '../lib/nutrition';
+import { draftErrors, fromDraft, ProfileDraft, toDraft } from '../lib/profileDraft';
 import { playRestSound } from '../lib/restAlarm';
 import { exactAlarmGranted, requestExactAlarm } from '../lib/restNotifications';
 import { AVISO_SEG, REST_SOUNDS, restSoundOf } from '../lib/restSounds';
@@ -80,12 +70,18 @@ export default function Perfil() {
       <BasicsStep d={d} set={set} />
       <SectionHeader title="Objetivo" />
       <GoalStep d={d} set={set} />
+      <SectionHeader title="Meta" />
+      <TargetStep d={d} set={set} />
       <SectionHeader title="Experiência" />
       <LevelStep d={d} set={set} />
       <SectionHeader title="Rotina" />
       <ScheduleStep d={d} set={set} />
       <SectionHeader title="Atividade no dia a dia" />
       <ActivityStep d={d} set={set} />
+      <SectionHeader title="Saúde" />
+      <HealthStep d={d} set={set} />
+      <SectionHeader title="Corpo" />
+      <BodyStep d={d} set={set} />
       <SectionHeader title="Músculos prioritários" />
       <PriorityStep d={d} set={set} />
 
@@ -161,7 +157,7 @@ export default function Perfil() {
 
       <SectionHeader title="Backup dos dados" />
       <Card style={{ gap: space.md }}>
-        <T v="small">Seus dados ficam só neste aparelho. Salve um arquivo de backup no Drive, e-mail ou WhatsApp para não perder o histórico.</T>
+        <T v="small">Seus dados ficam só neste aparelho. Salve um arquivo de backup no Drive, e-mail ou WhatsApp para não perder o histórico. O arquivo inclui medicamentos e condições de saúde, se você os informou: guarde em um lugar de confiança.</T>
         <Button
           title="Salvar arquivo de backup"
           icon="download-outline"
