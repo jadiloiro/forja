@@ -30,14 +30,43 @@ export default function Metas() {
         <T v="small">
           Objetivo: {OBJETIVO_LABEL[profile.objetivo]} · {profile.pesoKg} kg
         </T>
-        <T v="small">
-          Gasto estimado {auto.gasto} kcal/dia → sugestão de {auto.kcal} kcal com P {auto.p} g ({(auto.p / profile.pesoKg).toFixed(1)} g/kg), C {auto.c} g,
-          G {auto.g} g.
+        <T v="h3" style={{ marginTop: 4 }}>
+          Cálculo automático: {auto.kcal} kcal · P {auto.p} g · C {auto.c} g · G {auto.g} g
         </T>
+        {targets.manual && <T v="small">Suas metas manuais continuam valendo até você voltar para as automáticas.</T>}
+        {auto.explicacao.map((linha) => (
+          <T key={linha} v="small">
+            {linha}
+          </T>
+        ))}
         <T v="small" style={{ color: colors.textMute, marginTop: 4 }}>
           As metas automáticas se ajustam sozinhas quando você registra um novo peso.
         </T>
       </Card>
+
+      {auto.avisos.length > 0 && (
+        <Card style={{ gap: space.sm, marginTop: space.md, borderColor: colors.warn }}>
+          <T v="tiny" style={{ color: colors.warn }}>
+            Atenção
+          </T>
+          {auto.avisos.map((linha) => (
+            <T key={linha} v="small" style={{ color: colors.text }}>
+              {linha}
+            </T>
+          ))}
+        </Card>
+      )}
+
+      {auto.lembretes.length > 0 && (
+        <Card style={{ gap: space.sm, marginTop: space.md }}>
+          <T v="tiny">Lembretes</T>
+          {auto.lembretes.map((linha) => (
+            <T key={linha} v="small">
+              {linha}
+            </T>
+          ))}
+        </Card>
+      )}
 
       <SectionHeader title="Ajustar manualmente" />
       <View style={{ gap: space.md }}>

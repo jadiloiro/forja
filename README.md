@@ -13,7 +13,7 @@ App Android (Expo / React Native) para montar, executar e acompanhar treinos de 
 - **Progresso**: histórico, recordes pessoais com 1RM estimado, gráfico de evolução por exercício, volume semanal, séries por músculo e peso corporal.
 
 **Nutrição**
-- Metas de calorias e macros calculadas pelo perfil (Mifflin-St Jeor + nível de atividade + treinos) e reajustadas quando você registra um novo peso. Também dá para definir manualmente.
+- Metas de calorias e macros calculadas pelo perfil (Mifflin-St Jeor + nível de atividade + treinos + ritmo e meta de peso), com piso no metabolismo basal e explicação do cálculo, reajustadas quando você registra um novo peso. Também dá para definir manualmente.
 - Diário por refeição com **~600 alimentos da Tabela TACO** (valores brasileiros) + suplementos comuns, porções caseiras, alimentos personalizados a partir do rótulo, "repetir de ontem" e controle de água.
 
 **Dados**
