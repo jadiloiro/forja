@@ -1,6 +1,6 @@
 import { Medicamento, Profile } from './trainingTypes';
 
-type CamposDeTexto = 'idade' | 'alturaCm' | 'pesoKg' | 'pesoMetaKg' | 'prazoSemanas' | 'sonoHoras' | 'condicoes';
+type CamposDeTexto = 'idade' | 'alturaCm' | 'pesoKg' | 'pesoMetaKg' | 'prazoSemanas' | 'sonoHoras' | 'condicoes' | 'alimentosExcluidos';
 
 export type ProfileDraft = Omit<Profile, CamposDeTexto | 'medicamentos' | 'lesoes'> &
   Record<CamposDeTexto, string> &
@@ -29,6 +29,7 @@ export function toDraft(p?: Profile): ProfileDraft {
     lesoes: p?.lesoes ?? [],
     sonoHoras: optionalText(p?.sonoHoras),
     apetite: p?.apetite,
+    alimentosExcluidos: p?.alimentosExcluidos?.join(', ') ?? '',
   };
 }
 
@@ -56,6 +57,7 @@ function cleanMedicamento(m: Medicamento): Medicamento | undefined {
 
 export function fromDraft(d: ProfileDraft): Profile {
   const medicamentos = d.medicamentos.map(cleanMedicamento).filter((m): m is Medicamento => !!m);
+  const excluidos = d.alimentosExcluidos.split(',').map((t) => t.trim()).filter(Boolean);
   return {
     ...d,
     nome: d.nome.trim(),
@@ -68,5 +70,6 @@ export function fromDraft(d: ProfileDraft): Profile {
     condicoes: d.condicoes.trim() || undefined,
     medicamentos: medicamentos.length ? medicamentos : undefined,
     lesoes: d.lesoes.length ? d.lesoes : undefined,
+    alimentosExcluidos: excluidos.length ? excluidos : undefined,
   };
 }

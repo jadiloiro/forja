@@ -92,6 +92,7 @@ interface Actions {
   updateFoodEntry: (data: string, id: string, gramas: number) => void;
   removeFoodEntry: (data: string, id: string) => void;
   copyMeal: (from: string, to: string, refeicao: FoodEntry['refeicao']) => void;
+  applyMealPlan: (data: string, entries: Omit<FoodEntry, 'id'>[], replace: boolean) => void;
   addWater: (data: string, ml: number) => void;
   saveCustomFood: (f: Food) => void;
   deleteCustomFood: (id: string) => void;
@@ -504,6 +505,13 @@ export const useStore = create<Store>()(
           return {
             nutrition: { ...s.nutrition, [to]: { ...day, entries: [...day.entries, ...src.map((e) => ({ ...e, id: uid() }))] } },
           };
+        }),
+      // Não mexe nos alimentos recentes: um cardápio inteiro tomaria o lugar do que a pessoa costuma registrar.
+      applyMealPlan: (data, entries, replace) =>
+        set((s) => {
+          const day = s.nutrition[data] ?? { entries: [], aguaMl: 0 };
+          const novos = entries.map((e) => ({ ...e, id: uid() }));
+          return { nutrition: { ...s.nutrition, [data]: { ...day, entries: replace ? novos : [...day.entries, ...novos] } } };
         }),
       addWater: (data, ml) =>
         set((s) => {

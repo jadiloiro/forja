@@ -172,6 +172,7 @@ export function HealthStep({ d, set }: { d: ProfileDraft; set: Set }) {
         </Card>
       ))}
       <Field label="Condições de saúde relevantes" value={d.condicoes} onChangeText={(condicoes) => set({ condicoes })} multiline placeholder="Ex.: hipertensão, diabetes" />
+      <Field label="Alimentos que você não come" value={d.alimentosExcluidos} onChangeText={(alimentosExcluidos) => set({ alimentosExcluidos })} multiline placeholder="Ex.: peixe, leite, ovos (separe por vírgula)" />
     </View>
   );
 }

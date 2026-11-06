@@ -51,6 +51,14 @@ export default function Nutricao() {
         <MacroBars totals={totals} targets={targets} />
       </Card>
 
+      <Button
+        title="Sugerir cardápio"
+        icon="restaurant-outline"
+        variant="secondary"
+        style={{ marginTop: space.md }}
+        onPress={() => router.push({ pathname: '/cardapio', params: { date } })}
+      />
+
       <View style={{ gap: space.md, marginTop: space.lg }}>
         {MEALS.map((m) => {
           const entries = log?.entries.filter((e) => e.refeicao === m.key) ?? [];
