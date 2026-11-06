@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { exportBackup, useStore } from '../useStore';
+import { EXERCISE_MAP } from '../../data/exercises';
+import { exportBackup, State, useStore } from '../useStore';
 
 // Dados como estão salvos nos aparelhos na versão 1 do persist. Não edite para fazer um teste passar:
 // se mudar o formato, suba a versão e escreva um `migrate` que continue carregando este conteúdo.
@@ -124,6 +125,49 @@ describe('backup', () => {
     expect(s.plans.map((p) => p.id)).toEqual(['p1']);
     expect(s.history.map((h) => h.id)).toEqual(['h1']);
     expect(s.settings.incrementoBarraKg).toBe(5);
+  });
+
+  test('o backup restaura todos os dados e não guarda metadados do arquivo', () => {
+    // O tipo obriga a incluir aqui todo campo novo do estado; o teste garante que ele entre no backup.
+    const completo: Required<Omit<State, 'session'>> = {
+      profile: SALVO_NA_V1.state.profile as Required<State>['profile'],
+      plans: SALVO_NA_V1.state.plans,
+      activePlanId: 'p1',
+      history: SALVO_NA_V1.state.history as State['history'],
+      customExercises: [{ ...EXERCISE_MAP.supino_reto_barra, id: 'meu_supino', custom: true }],
+      bodyWeights: [{ data: '2026-01-01', pesoKg: 80 }],
+      targets: { kcal: 3000, p: 160, c: 400, g: 80, aguaMl: 2800, manual: true },
+      nutrition: {
+        '2026-01-01': {
+          aguaMl: 500,
+          entries: [{ id: 'n1', foodId: 'f1', gramas: 100, refeicao: 'almoco', snapshot: { nome: 'Arroz', kcal: 128, p: 2.5, c: 28, g: 0.2 } }],
+        },
+      },
+      customFoods: [{ id: 'f1', nome: 'Meu arroz', cat: 'teste', kcal: 128, p: 2.5, c: 28, g: 0.2, f: 1.6, custom: true }],
+      recentFoodIds: ['f1'],
+      settings: {
+        incrementoBarraKg: 5,
+        incrementoHalterKg: 1,
+        vibrarDescanso: false,
+        pesoBarraKg: 15,
+        notificarDescanso: false,
+        somDescanso: false,
+        somDescansoId: 'gongo',
+        avisoDezSeg: true,
+      },
+    };
+    useStore.setState(completo);
+    const backup = exportBackup();
+
+    useStore.getState().resetAll();
+    useStore.getState().importBackup(backup);
+
+    const s = useStore.getState();
+    for (const campo of Object.keys(completo) as (keyof typeof completo)[]) {
+      expect(s[campo]).toEqual(completo[campo]);
+    }
+    expect(s).not.toHaveProperty('app');
+    expect(s).not.toHaveProperty('exportadoEm');
   });
 
   test('importar não traz um treino em andamento', () => {

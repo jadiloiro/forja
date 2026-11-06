@@ -506,9 +506,9 @@ export const useStore = create<Store>()(
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       importBackup: (json) => {
-        const data = JSON.parse(json) as Partial<State> & { app?: string };
+        const data = JSON.parse(json) as Partial<State> & { app?: string; exportadoEm?: string };
         if (data.app !== 'forja' || !Array.isArray(data.plans)) throw new Error('Arquivo de backup inválido.');
-        const { app: _app, ...rest } = data;
+        const { app: _app, exportadoEm: _exportadoEm, ...rest } = data;
         set({ ...initial, ...rest, session: undefined });
       },
       resetAll: () => set({ ...initial, profile: undefined, targets: undefined, activePlanId: undefined, session: undefined }),
