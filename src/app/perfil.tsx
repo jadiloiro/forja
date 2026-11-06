@@ -94,6 +94,11 @@ export default function Perfil() {
             Meta: {preview.kcal} kcal ({preview.ajuste > 0 ? '+' : ''}
             {Math.round(preview.ajuste * 100)}%) · P {preview.p} g · C {preview.c} g · G {preview.g} g
           </T>
+          {preview.avisos.map((linha) => (
+            <T key={linha} v="small" style={{ color: colors.warn, marginTop: 4 }}>
+              {linha}
+            </T>
+          ))}
         </Card>
       )}
 
