@@ -1,0 +1,153 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { exportBackup, useStore } from '../useStore';
+
+// Dados como estão salvos nos aparelhos na versão 1 do persist. Não edite para fazer um teste passar:
+// se mudar o formato, suba a versão e escreva um `migrate` que continue carregando este conteúdo.
+const SALVO_NA_V1 = {
+  version: 1,
+  state: {
+    profile: {
+      nome: 'Teste',
+      sexo: 'M',
+      idade: 30,
+      alturaCm: 180,
+      pesoKg: 80,
+      nivel: 'intermediario',
+      objetivo: 'hipertrofia',
+      diasSemana: 4,
+      duracaoMin: 60,
+      atividade: 'moderado',
+      prioridades: ['peito'],
+    },
+    plans: [
+      {
+        id: 'p1',
+        nome: 'Meu plano',
+        descricao: '',
+        criadoEm: '2026-01-01T12:00:00.000Z',
+        proximo: 0,
+        dias: [
+          {
+            id: 'd1',
+            nome: 'A · Peito',
+            foco: 'Peito',
+            exercicios: [{ uid: 'e1', exerciseId: 'supino_reto_barra', series: 3, repMin: 8, repMax: 12, descansoSeg: 90 }],
+          },
+        ],
+      },
+    ],
+    activePlanId: 'p1',
+    history: [
+      {
+        id: 'h1',
+        nome: 'A · Peito',
+        inicio: '2026-01-01T12:00:00.000Z',
+        fim: '2026-01-01T13:00:00.000Z',
+        volumeKg: 600,
+        exercicios: [
+          {
+            uid: 'x1',
+            exerciseId: 'supino_reto_barra',
+            repMin: 8,
+            repMax: 12,
+            descansoSeg: 90,
+            sets: [{ peso: 60, reps: 10, feito: true, tipo: 'normal' }],
+          },
+        ],
+      },
+    ],
+    bodyWeights: [{ data: '2026-01-01', pesoKg: 80 }],
+    targets: { kcal: 3000, p: 160, c: 400, g: 80, aguaMl: 2800, manual: true },
+    nutrition: {},
+    // Salvo antes da calculadora de anilhas e do aviso de descanso: sem pesoBarraKg e notificarDescanso.
+    settings: { incrementoBarraKg: 5, incrementoHalterKg: 2, vibrarDescanso: false },
+  },
+};
+
+const STORE_KEY = 'forja-store';
+
+async function carregar(salvo: unknown) {
+  await AsyncStorage.setItem(STORE_KEY, JSON.stringify(salvo));
+  await useStore.persist.rehydrate();
+}
+
+beforeEach(async () => {
+  useStore.getState().resetAll();
+  await AsyncStorage.clear();
+});
+
+describe('dados já salvos no aparelho', () => {
+  test('continuam carregando', async () => {
+    await carregar(SALVO_NA_V1);
+    const s = useStore.getState();
+
+    expect(s.profile?.nome).toBe('Teste');
+    expect(s.plans.map((p) => p.id)).toEqual(['p1']);
+    expect(s.activePlanId).toBe('p1');
+    expect(s.history.map((h) => h.id)).toEqual(['h1']);
+    expect(s.bodyWeights).toEqual([{ data: '2026-01-01', pesoKg: 80 }]);
+    expect(s.targets).toMatchObject({ kcal: 3000, manual: true });
+    expect(s.settings).toMatchObject({ incrementoBarraKg: 5, vibrarDescanso: false });
+  });
+
+  test('campos que ainda não existiam ficam com o valor padrão', async () => {
+    await carregar(SALVO_NA_V1);
+    const s = useStore.getState();
+
+    expect(s.customFoods).toEqual([]);
+    expect(s.customExercises).toEqual([]);
+    expect(s.recentFoodIds).toEqual([]);
+  });
+
+  test('um treino pode começar a partir deles', async () => {
+    await carregar(SALVO_NA_V1);
+    useStore.getState().startSession('p1', 'd1');
+    const ex = useStore.getState().session?.exercicios[0];
+
+    expect(ex?.exerciseId).toBe('supino_reto_barra');
+    expect(ex?.sets).toHaveLength(3);
+    expect(ex?.sets[0].peso).toBe(60);
+  });
+});
+
+describe('backup', () => {
+  test('exportar e importar devolve os mesmos dados', async () => {
+    await carregar(SALVO_NA_V1);
+    const backup = exportBackup();
+
+    useStore.getState().resetAll();
+    expect(useStore.getState().plans).toEqual([]);
+
+    useStore.getState().importBackup(backup);
+    const s = useStore.getState();
+    expect(s.plans.map((p) => p.id)).toEqual(['p1']);
+    expect(s.history.map((h) => h.id)).toEqual(['h1']);
+    expect(s.settings.incrementoBarraKg).toBe(5);
+  });
+
+  test('importar não traz um treino em andamento', () => {
+    useStore.setState({ session: { id: 's', nome: 'Treino', inicio: '', exercicios: [] } });
+    useStore.getState().importBackup(JSON.stringify({ app: 'forja', plans: [] }));
+    expect(useStore.getState().session).toBeUndefined();
+  });
+
+  test('backup antigo, sem campos novos, recebe os valores padrão', () => {
+    useStore.getState().importBackup(JSON.stringify({ app: 'forja', plans: [] }));
+    expect(useStore.getState().customFoods).toEqual([]);
+    expect(useStore.getState().settings.incrementoBarraKg).toBe(2.5);
+  });
+
+  test.each([
+    ['de outro app', JSON.stringify({ app: 'outro', plans: [] })],
+    ['sem planos', JSON.stringify({ app: 'forja' })],
+  ])('recusa arquivo %s e mantém os dados', async (_nome, json) => {
+    await carregar(SALVO_NA_V1);
+    expect(() => useStore.getState().importBackup(json)).toThrow('Arquivo de backup inválido');
+    expect(useStore.getState().plans.map((p) => p.id)).toEqual(['p1']);
+  });
+
+  test('recusa arquivo que não é JSON', () => {
+    expect(() => useStore.getState().importBackup('isto não é json')).toThrow();
+  });
+});
