@@ -3,28 +3,21 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  ActivityStep,
-  BasicsStep,
-  draftErrors,
-  fromDraft,
-  GoalStep,
-  LevelStep,
-  PriorityStep,
-  ProfileDraft,
-  ScheduleStep,
-  toDraft,
-} from '../components/ProfileForm';
+import { ActivityStep, BasicsStep, BodyStep, GoalStep, HealthStep, LevelStep, PriorityStep, ScheduleStep, TargetStep } from '../components/ProfileForm';
 import { Button, IconButton, ProgressBar, T } from '../components/ui';
+import { draftErrors, fromDraft, ProfileDraft, toDraft } from '../lib/profileDraft';
 import { useStore } from '../store/useStore';
 import { colors, space } from '../theme';
 
 const STEPS = [
   { title: 'Vamos montar seu treino', sub: 'Primeiro, alguns dados básicos.', C: BasicsStep },
   { title: 'Qual é o seu objetivo?', sub: 'Isso define séries, repetições e calorias.', C: GoalStep },
+  { title: 'Aonde quer chegar?', sub: 'Sua meta de peso, prazo e ritmo.', C: TargetStep },
   { title: 'Qual sua experiência?', sub: 'Escolhemos exercícios adequados ao seu nível.', C: LevelStep },
   { title: 'Sua rotina de treino', sub: 'Usamos para escolher a divisão ideal.', C: ScheduleStep },
   { title: 'E fora da academia?', sub: 'Seu nível de atividade no dia a dia.', C: ActivityStep },
+  { title: 'Sua saúde', sub: 'Medicamentos e condições que afetam o treino e a dieta.', C: HealthStep },
+  { title: 'Seu corpo hoje', sub: 'Limitações, sono e apetite.', C: BodyStep },
   { title: 'Alguma prioridade?', sub: 'Músculos que você quer desenvolver mais.', C: PriorityStep },
 ];
 
@@ -38,11 +31,9 @@ export default function Onboarding() {
   const last = step === STEPS.length - 1;
 
   const next = () => {
-    if (step === 0) {
-      const e = draftErrors(d);
-      setErr(e);
-      if (e) return;
-    }
+    const e = draftErrors(d);
+    setErr(e);
+    if (e) return;
     if (last) {
       saveProfile(fromDraft(d), { regenerate: true });
       router.replace('/(tabs)/treinos');

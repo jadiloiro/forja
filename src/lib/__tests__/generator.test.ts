@@ -1,7 +1,8 @@
 import { EXERCISE_MAP, EXERCISES } from '../../data/exercises';
 import { Exercise } from '../../data/types';
+import { EVITAR_POR_REGIAO, exercisesToAvoid } from '../exerciseLimits';
 import { alternativesFor, generatePlan, prescribe } from '../generator';
-import { Nivel, Objetivo, Profile } from '../trainingTypes';
+import { Nivel, Objetivo, Profile, REGIAO_LABEL, RegiaoCorporal } from '../trainingTypes';
 
 const NIVEIS: Nivel[] = ['iniciante', 'intermediario', 'avancado'];
 const OBJETIVOS: Objetivo[] = ['hipertrofia', 'forca', 'emagrecimento', 'manutencao'];
@@ -94,7 +95,84 @@ describe('generatePlan', () => {
     expect(seriesDePeito(['peito'])).toEqual(sem.map((n) => n + 1));
   });
 
-  test.todo('respeita lesões e limitações do perfil (entra com o M006)');
+  describe('lesões e limitações', () => {
+    const REGIOES = Object.keys(REGIAO_LABEL) as RegiaoCorporal[];
+    const idsDe = (p: Profile) => generatePlan(p).dias.flatMap((d) => d.exercicios.map((e) => e.exerciseId));
+
+    test.each(REGIOES)('%s: nenhuma combinação inclui exercício a evitar, e nenhum treino fica vazio', (regiao) => {
+      for (const combo of COMBINACOES) {
+        const plan = generatePlan(profile({ ...combo, lesoes: [regiao] }));
+        expect(plan.dias.length).toBeGreaterThan(0);
+        for (const dia of plan.dias) {
+          expect(dia.exercicios.length).toBeGreaterThan(0);
+          for (const e of dia.exercicios) expect(EVITAR_POR_REGIAO[regiao]).not.toContain(e.exerciseId);
+        }
+      }
+    });
+
+    test('todas as regiões marcadas ainda geram um plano utilizável', () => {
+      const evitar = exercisesToAvoid(REGIOES);
+      for (const combo of COMBINACOES) {
+        const plan = generatePlan(profile({ ...combo, lesoes: REGIOES }));
+        expect(plan.dias.length).toBeGreaterThan(0);
+        plan.dias.forEach((dia, i) => {
+          expect(dia.exercicios.length).toBeGreaterThan(0);
+          expect(dia.nome[0]).toBe(String.fromCharCode(65 + i));
+          for (const e of dia.exercicios) expect(evitar.has(e.exerciseId)).toBe(false);
+        });
+      }
+    });
+
+    test('troca o exercício por uma opção do mesmo grupo', () => {
+      const base = { diasSemana: 3, nivel: 'intermediario', duracaoMin: 60 } as const;
+      expect(idsDe(profile(base))).toContain('agachamento_livre');
+      const comJoelho = idsDe(profile({ ...base, lesoes: ['joelho'] }));
+      expect(comJoelho).not.toContain('agachamento_livre');
+      expect(comJoelho).toContain('leg_press');
+    });
+
+    test('a vaga de um grupo sem opção passa para o próximo exercício, sem encurtar o treino', () => {
+      const base = { diasSemana: 4, duracaoMin: 60 } as const;
+      const contar = (p: Profile) => generatePlan(p).dias.map((d) => d.exercicios.length);
+      const sem = contar(profile(base));
+      const comOmbro = generatePlan(profile({ ...base, lesoes: ['ombro'] }));
+      // Todo o grupo de desenvolvimento é evitado com ombro marcado.
+      expect(comOmbro.dias.flatMap((d) => d.exercicios).some((e) => e.exerciseId.startsWith('desenvolvimento'))).toBe(false);
+      expect(comOmbro.dias.map((d) => d.exercicios.length)).toEqual(sem);
+    });
+
+    test('sem lesão marcada o plano é o mesmo de antes', () => {
+      for (const combo of COMBINACOES) {
+        expect(idsDe(profile({ ...combo, lesoes: [] }))).toEqual(idsDe(profile(combo)));
+      }
+      const plan = generatePlan(profile());
+      expect(plan.descricao).not.toContain('Evita');
+    });
+
+    test('a descrição do plano avisa o que foi evitado', () => {
+      expect(generatePlan(profile({ lesoes: ['joelho', 'lombar'] })).descricao).toContain('sobrecarregar: joelho, lombar.');
+    });
+  });
+});
+
+describe('EVITAR_POR_REGIAO', () => {
+  test('todo exercício listado existe no banco', () => {
+    for (const ids of Object.values(EVITAR_POR_REGIAO)) {
+      for (const id of ids) expect(EXERCISE_MAP[id]).toBeDefined();
+    }
+  });
+
+  test('sem regiões não há nada a evitar', () => {
+    expect(exercisesToAvoid().size).toBe(0);
+    expect(exercisesToAvoid([]).size).toBe(0);
+  });
+
+  test('junta as listas das regiões marcadas', () => {
+    const evitar = exercisesToAvoid(['joelho', 'lombar']);
+    expect(evitar.has('cadeira_extensora')).toBe(true);
+    expect(evitar.has('levantamento_terra')).toBe(true);
+    expect(evitar.has('rosca_scott')).toBe(false);
+  });
 });
 
 describe('prescribe', () => {

@@ -5,6 +5,18 @@ export type Sexo = 'M' | 'F';
 export type Nivel = 'iniciante' | 'intermediario' | 'avancado';
 export type Objetivo = 'hipertrofia' | 'forca' | 'emagrecimento' | 'manutencao';
 export type Atividade = 'sedentario' | 'leve' | 'moderado' | 'alto' | 'muito_alto';
+export type Ritmo = 'leve' | 'moderado' | 'acelerado';
+export type Apetite = 'baixo' | 'normal' | 'alto';
+export type RegiaoCorporal = 'pescoco' | 'ombro' | 'cotovelo' | 'punho' | 'lombar' | 'quadril' | 'joelho' | 'tornozelo';
+/** Medicamentos que afetam apetite e peso, marcados por atalho. */
+export type MedicamentoAtalho = 'tirzepatida' | 'semaglutida';
+
+export interface Medicamento {
+  nome: string;
+  dose?: string;
+  frequencia?: string;
+  atalho?: MedicamentoAtalho;
+}
 
 export interface Profile {
   nome: string;
@@ -18,7 +30,36 @@ export interface Profile {
   duracaoMin: number;
   atividade: Atividade;
   prioridades: MuscleGroup[];
+  // Opcionais: perfis salvos antes destes campos não os têm.
+  pesoMetaKg?: number;
+  prazoSemanas?: number;
+  ritmo?: Ritmo;
+  medicamentos?: Medicamento[];
+  condicoes?: string;
+  lesoes?: RegiaoCorporal[];
+  sonoHoras?: number;
+  apetite?: Apetite;
 }
+
+export const RITMO_LABEL: Record<Ritmo, string> = { leve: 'Leve', moderado: 'Moderado', acelerado: 'Acelerado' };
+
+export const APETITE_LABEL: Record<Apetite, string> = { baixo: 'Pouca fome', normal: 'Normal', alto: 'Muita fome' };
+
+export const REGIAO_LABEL: Record<RegiaoCorporal, string> = {
+  pescoco: 'Pescoço',
+  ombro: 'Ombro',
+  cotovelo: 'Cotovelo',
+  punho: 'Punho',
+  lombar: 'Lombar',
+  quadril: 'Quadril',
+  joelho: 'Joelho',
+  tornozelo: 'Tornozelo',
+};
+
+export const MEDICAMENTO_ATALHO_LABEL: Record<MedicamentoAtalho, string> = {
+  tirzepatida: 'Tirzepatida (Mounjaro)',
+  semaglutida: 'Semaglutida (Ozempic/Wegovy)',
+};
 
 export const NIVEL_LABEL: Record<Nivel, string> = {
   iniciante: 'Iniciante (até 6 meses)',

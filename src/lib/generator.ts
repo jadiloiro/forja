@@ -1,7 +1,8 @@
 import { EXERCISE_MAP } from '../data/exercises';
 import { Exercise, MuscleGroup } from '../data/types';
+import { exercisesToAvoid } from './exerciseLimits';
 import { uid } from './id';
-import { Nivel, Objetivo, Plan, PlanExercise, Profile, WorkoutDay } from './trainingTypes';
+import { Nivel, Objetivo, Plan, PlanExercise, Profile, REGIAO_LABEL, WorkoutDay } from './trainingTypes';
 
 /** Pools ordenados por preferência. O gerador pega o primeiro permitido para o nível e ainda não usado no plano. */
 const POOLS = {
@@ -134,11 +135,12 @@ function pick(
   nivel: Nivel,
   usedDay: Set<string>,
   usedPlan: Map<string, number>,
+  evitar: Set<string>,
   preferBarra = false,
 ): Exercise | undefined {
   const allowed = POOLS[pool]
     .map((id) => EXERCISE_MAP[id])
-    .filter((e): e is Exercise => !!e && e.nivel <= MAX_NIVEL[nivel] && !usedDay.has(e.id));
+    .filter((e): e is Exercise => !!e && e.nivel <= MAX_NIVEL[nivel] && !usedDay.has(e.id) && !evitar.has(e.id));
   if (!allowed.length) return undefined;
   if (preferBarra) {
     // No treino de força, o primeiro básico do dia deve ser com barra (melhor para cargas altas).
@@ -156,13 +158,18 @@ export function generatePlan(profile: Profile): Plan {
   const n = exercisesForDuration(profile.duracaoMin);
   const usedPlan = new Map<string, number>();
   const prioridades = new Set<MuscleGroup>(profile.prioridades);
+  const evitar = exercisesToAvoid(profile.lesoes);
+  // Sem opção segura no grupo, a vaga passa para o próximo exercício em importância, em vez de encurtar o treino.
+  const temOpcao = (pool: PoolKey) =>
+    !evitar.size ||
+    (POOLS[pool] as readonly string[]).some((id) => !evitar.has(id) && EXERCISE_MAP[id] && EXERCISE_MAP[id].nivel <= MAX_NIVEL[profile.nivel]);
 
   const dias: WorkoutDay[] = split.dias.map((tpl, idx) => {
     const usedDay = new Set<string>();
     const forcaOk = profile.objetivo === 'forca' && profile.nivel !== 'iniciante';
     const slots = tpl.slots
       .map((slot, order) => ({ ...slot, order }))
-      .filter((slot) => !slot.forca || forcaOk);
+      .filter((slot) => (!slot.forca || forcaOk) && temOpcao(slot.pool));
     // Mantém os N slots mais importantes, preservando a ordem de execução.
     const keep = [...slots].sort((a, b) => a.pri - b.pri || a.order - b.order).slice(0, n);
     keep.sort((a, b) => a.order - b.order);
@@ -170,7 +177,7 @@ export function generatePlan(profile: Profile): Plan {
     const exercicios: PlanExercise[] = [];
     let principalUsado = false;
     for (const slot of keep) {
-      const ex = pick(slot.pool, profile.nivel, usedDay, usedPlan, forcaOk && !principalUsado);
+      const ex = pick(slot.pool, profile.nivel, usedDay, usedPlan, evitar, forcaOk && !principalUsado);
       if (!ex) continue;
       usedDay.add(ex.id);
       usedPlan.set(ex.id, (usedPlan.get(ex.id) ?? 0) + 1);
@@ -184,10 +191,12 @@ export function generatePlan(profile: Profile): Plan {
     return { id: uid(), nome: `${letra} · ${tpl.nome}`, foco: tpl.foco, exercicios };
   });
 
+  const regioes = (profile.lesoes ?? []).map((r) => REGIAO_LABEL[r].toLowerCase()).join(', ');
+
   return {
     id: uid(),
     nome: split.nome,
-    descricao: split.descricao,
+    descricao: regioes ? `${split.descricao} Evita exercícios que costumam sobrecarregar: ${regioes}.` : split.descricao,
     criadoEm: new Date().toISOString(),
     dias,
     proximo: 0,

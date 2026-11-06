@@ -102,6 +102,15 @@ describe('dados já salvos no aparelho', () => {
     expect(s.recentFoodIds).toEqual([]);
   });
 
+  test('o perfil salvo antes dos campos de saúde e meta carrega sem eles e ainda gera plano', async () => {
+    await carregar(SALVO_NA_V1);
+    const s = useStore.getState();
+
+    expect(s.profile?.lesoes).toBeUndefined();
+    expect(s.profile?.medicamentos).toBeUndefined();
+    expect(s.generateNewPlan()).toBeDefined();
+  });
+
   test('um treino pode começar a partir deles', async () => {
     await carregar(SALVO_NA_V1);
     useStore.getState().startSession('p1', 'd1');
@@ -226,7 +235,17 @@ describe('backup', () => {
   test('o backup restaura todos os dados e não guarda metadados do arquivo', () => {
     // O tipo obriga a incluir aqui todo campo novo do estado; o teste garante que ele entre no backup.
     const completo: Required<Omit<State, 'session'>> = {
-      profile: SALVO_NA_V1.state.profile as Required<State>['profile'],
+      profile: {
+        ...(SALVO_NA_V1.state.profile as Required<State>['profile']),
+        pesoMetaKg: 72,
+        prazoSemanas: 20,
+        ritmo: 'moderado',
+        medicamentos: [{ nome: 'Tirzepatida (Mounjaro)', dose: '5 mg', frequencia: 'Semanal', atalho: 'tirzepatida' }],
+        condicoes: 'Hipertensão',
+        lesoes: ['joelho'],
+        sonoHoras: 7,
+        apetite: 'baixo',
+      },
       plans: SALVO_NA_V1.state.plans,
       activePlanId: 'p1',
       history: SALVO_NA_V1.state.history as State['history'],
