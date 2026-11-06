@@ -15,10 +15,12 @@ import {
   toDraft,
 } from '../components/ProfileForm';
 import { showDialog } from '../components/Dialog';
-import { Button, Card, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
+import { Button, Card, Chip, ChipRow, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
 import { computeTargets } from '../lib/nutrition';
+import { playRestSound } from '../lib/restAlarm';
 import { exactAlarmGranted, requestExactAlarm } from '../lib/restNotifications';
+import { AVISO_SEG, REST_SOUNDS, restSoundOf } from '../lib/restSounds';
 import { exportBackup, useStore } from '../store/useStore';
 import { colors, space } from '../theme';
 
@@ -114,6 +116,31 @@ export default function Perfil() {
       <SectionHeader title="Descanso" />
       <Card style={{ gap: space.md }}>
         <ToggleRow label="Vibrar no fim do descanso" value={settings.vibrarDescanso} onChange={(v) => updateSettings({ vibrarDescanso: v })} />
+        <ToggleRow label="Tocar som no fim do descanso" value={settings.somDescanso ?? true} onChange={(v) => updateSettings({ somDescanso: v })} />
+        {restSoundOf(settings) && (
+          <View style={{ gap: space.sm }}>
+            <T v="small">Toque para ouvir e escolher:</T>
+            <ChipRow>
+              {REST_SOUNDS.map((s) => (
+                <Chip
+                  key={s.id}
+                  label={s.nome}
+                  selected={restSoundOf(settings) === s.id}
+                  onPress={() => {
+                    updateSettings({ somDescansoId: s.id });
+                    playRestSound(s.id);
+                  }}
+                />
+              ))}
+            </ChipRow>
+          </View>
+        )}
+        <ToggleRow
+          label={`Avisar ${AVISO_SEG} segundos antes`}
+          hint="Um toque curto para você se preparar para a próxima série."
+          value={settings.avisoDezSeg ?? false}
+          onChange={(v) => updateSettings({ avisoDezSeg: v })}
+        />
         {Platform.OS !== 'web' && (
           <ToggleRow
             label="Avisar com o app minimizado"
