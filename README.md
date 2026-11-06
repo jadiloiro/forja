@@ -21,12 +21,16 @@ App Android (Expo / React Native) para montar, executar e acompanhar treinos de 
 
 ## Rodar no computador
 
-Requisitos: Node 20+ e o app **Expo Go** não serve (o projeto usa módulos nativos); use um emulador Android ou um celular com depuração USB.
+Requisitos: Node 20+ e o app **Expo Go** no celular, compatível com o SDK do projeto.
 
 ```bash
 npm install
-npx expo run:android      # compila e instala no emulador/celular conectado
+npx expo start            # leia o QR code com o Expo Go
 ```
+
+O Expo Go é o caminho mais rápido para desenvolver, mas é mais lento que o APK e não usa as configurações nativas do `app.json`. Os sons próprios do alarme de descanso com o app minimizado, por exemplo, só funcionam no APK ou em um build instalado.
+
+Para compilar e instalar no emulador ou no celular conectado por USB (requer Android Studio): `npx expo run:android`.
 
 Para iterar só na interface pelo navegador: `npx expo start --web`.
 
