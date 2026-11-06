@@ -10,14 +10,14 @@ import { colors, space } from '../../theme';
 
 export default function Treinos() {
   const plan = useActivePlan();
-  const session = useStore((s) => s.session);
+  const hasSession = useStore((s) => !!s.session);
   const startSession = useStore((s) => s.startSession);
   const addDay = useStore((s) => s.addDay);
   const generateNewPlan = useStore((s) => s.generateNewPlan);
   const setNextDay = useStore((s) => s.setNextDay);
 
   const start = (dayId?: string) => {
-    if (session) {
+    if (hasSession) {
       showDialog('Treino em andamento', 'Você já tem um treino aberto. Quer continuar nele?', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Continuar treino', onPress: () => router.push('/sessao') },

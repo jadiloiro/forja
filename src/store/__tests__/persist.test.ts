@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 
 import { EXERCISE_MAP } from '../../data/exercises';
-import { exportBackup, State, useStore } from '../useStore';
+import { exportBackup, startPersistFlush, State, useStore } from '../useStore';
 
 // Dados como estão salvos nos aparelhos na versão 1 do persist. Não edite para fazer um teste passar:
 // se mudar o formato, suba a versão e escreva um `migrate` que continue carregando este conteúdo.
@@ -109,6 +110,101 @@ describe('dados já salvos no aparelho', () => {
     expect(ex?.exerciseId).toBe('supino_reto_barra');
     expect(ex?.sets).toHaveLength(3);
     expect(ex?.sets[0].peso).toBe(60);
+  });
+});
+
+describe('gravação no aparelho', () => {
+  const lerSalvo = async () => JSON.parse((await AsyncStorage.getItem(STORE_KEY)) ?? 'null');
+  const esperarFila = () => new Promise<void>((r) => setTimeout(r, 0));
+
+  beforeEach(async () => {
+    await carregar(SALVO_NA_V1);
+    (AsyncStorage.setItem as jest.Mock).mockClear();
+  });
+
+  test('digitar no treino não grava a cada dígito', async () => {
+    const { startSession, updateSet } = useStore.getState();
+    startSession('p1', 'd1');
+    const uid = useStore.getState().session!.exercicios[0].uid;
+    for (let peso = 1; peso <= 30; peso++) updateSet(uid, 0, { peso });
+    await esperarFila();
+
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  test('sair do app grava na hora, no formato de sempre', async () => {
+    let aoMudar: (st: string) => void = () => {};
+    const remover = jest.fn();
+    const espia = jest.spyOn(AppState, 'addEventListener').mockImplementation((_tipo, fn) => {
+      aoMudar = fn as (st: string) => void;
+      return { remove: remover } as never;
+    });
+    const parar = startPersistFlush();
+
+    useStore.getState().renamePlan('p1', 'Plano novo');
+    aoMudar('active');
+    await esperarFila();
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+
+    aoMudar('background');
+    await esperarFila();
+    const salvo = await lerSalvo();
+    expect(salvo.version).toBe(1);
+    expect(salvo.state.plans[0].nome).toBe('Plano novo');
+    expect(salvo.state.history.map((h: { id: string }) => h.id)).toEqual(['h1']);
+
+    parar();
+    expect(remover).toHaveBeenCalled();
+    espia.mockRestore();
+  });
+
+  test('finalizar o treino grava na hora', async () => {
+    const { startSession, completeSet, finishSession } = useStore.getState();
+    startSession('p1', 'd1');
+    completeSet(useStore.getState().session!.exercicios[0].uid, 0);
+    const id = finishSession();
+    await esperarFila();
+
+    const salvo = await lerSalvo();
+    expect(salvo.state.history[0].id).toBe(id);
+    expect(salvo.state.session).toBeUndefined();
+  });
+
+  test('o que foi gravado volta igual ao reabrir o app', async () => {
+    useStore.getState().renamePlan('p1', 'Plano novo');
+    useStore.getState().importBackup(exportBackup());
+    await esperarFila();
+
+    useStore.setState({ plans: [] }, false);
+    await useStore.persist.rehydrate();
+    expect(useStore.getState().plans[0].nome).toBe('Plano novo');
+  });
+
+  test.each([
+    ['importar um backup', () => useStore.getState().importBackup(JSON.stringify({ app: 'forja', plans: [] }))],
+    ['apagar tudo', () => useStore.getState().resetAll()],
+  ])('%s grava na hora', async (_nome, acao) => {
+    acao();
+    await esperarFila();
+    expect((await lerSalvo()).state.plans).toEqual([]);
+  });
+});
+
+describe('alterações na sessão', () => {
+  test('mudar uma série mantém os outros exercícios e séries iguais, para não renderizá-los de novo', async () => {
+    await carregar(SALVO_NA_V1);
+    const { startSession, addSessionExercise, updateSet } = useStore.getState();
+    startSession('p1', 'd1');
+    addSessionExercise('supino_reto_barra');
+    const antes = useStore.getState().session!.exercicios;
+
+    updateSet(antes[0].uid, 1, { peso: 70 });
+    const depois = useStore.getState().session!.exercicios;
+
+    expect(depois[1]).toBe(antes[1]);
+    expect(depois[0].sets[0]).toBe(antes[0].sets[0]);
+    expect(depois[0].sets[2]).toBe(antes[0].sets[2]);
+    expect(depois[0].sets[1].peso).toBe(70);
   });
 });
 

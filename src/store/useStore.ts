@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
+import { AppState } from 'react-native';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 import { EXERCISE_MAP, EXERCISES } from '../data/exercises';
 import { Exercise } from '../data/types';
@@ -11,6 +12,7 @@ import { uid } from '../lib/id';
 import { computeTargets } from '../lib/nutrition';
 import { DayLog, Food, FoodEntry, NutritionTargets } from '../lib/nutritionTypes';
 import { lastPerformance, sessionVolume, suggest } from '../lib/progression';
+import { createThrottledStorage } from '../lib/throttledStorage';
 import {
   ActiveSession,
   BodyWeight,
@@ -157,6 +159,16 @@ function buildSessionExercise(
 
 function mapSessionEx(s: ActiveSession, exUid: string, fn: (e: SessionExercise) => SessionExercise): ActiveSession {
   return { ...s, exercicios: s.exercicios.map((e) => (e.uid === exUid ? fn(e) : e)) };
+}
+
+const storage = createThrottledStorage<Store>(AsyncStorage);
+
+/** Grava o que estiver pendente quando o app sai da tela: depois disso o Android pode encerrá-lo. */
+export function startPersistFlush(): () => void {
+  const sub = AppState.addEventListener('change', (st) => {
+    if (st !== 'active') storage.flush();
+  });
+  return () => sub.remove();
 }
 
 export const useStore = create<Store>()(
@@ -428,6 +440,7 @@ export const useStore = create<Store>()(
           }
           return { session: undefined, history: [record, ...st.history], plans };
         });
+        storage.flush();
         return record.id;
       },
       discardSession: () => set({ session: undefined }),
@@ -510,13 +523,17 @@ export const useStore = create<Store>()(
         if (data.app !== 'forja' || !Array.isArray(data.plans)) throw new Error('Arquivo de backup inválido.');
         const { app: _app, exportadoEm: _exportadoEm, ...rest } = data;
         set({ ...initial, ...rest, session: undefined });
+        storage.flush();
       },
-      resetAll: () => set({ ...initial, profile: undefined, targets: undefined, activePlanId: undefined, session: undefined }),
+      resetAll: () => {
+        set({ ...initial, profile: undefined, targets: undefined, activePlanId: undefined, session: undefined });
+        storage.flush();
+      },
     }),
     {
       name: 'forja-store',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage,
     },
   ),
 );

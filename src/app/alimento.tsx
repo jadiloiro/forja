@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -76,33 +76,40 @@ export default function Alimento() {
             <T v="small">A base tem cerca de 600 alimentos da Tabela TACO, além de suplementos comuns. Os valores são por 100 g.</T>
           )
         }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => {
-              tap();
-              setPicked(item);
-            }}
-            style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <T style={{ fontSize: 14 }} numberOfLines={2}>
-                {item.nome}
-              </T>
-              <T v="small" style={{ fontSize: 12 }}>
-                100 g · P {item.p} · C {item.c} · G {item.g}
-                {item.custom ? ' · personalizado' : ''}
-              </T>
-            </View>
-            <T v="h3">{Math.round(item.kcal)}</T>
-            <T v="small" style={{ fontSize: 11 }}>
-              kcal
-            </T>
-          </Pressable>
-        )}
+        initialNumToRender={12}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        renderItem={({ item }) => <FoodRow food={item} onPick={setPicked} />}
       />
     </SafeAreaView>
   );
 }
+
+const FoodRow = memo(function FoodRow({ food, onPick }: { food: Food; onPick: (f: Food) => void }) {
+  return (
+    <Pressable
+      onPress={() => {
+        tap();
+        onPick(food);
+      }}
+      style={({ pressed }) => [styles.item, pressed && { backgroundColor: colors.surface2 }]}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <T style={{ fontSize: 14 }} numberOfLines={2}>
+          {food.nome}
+        </T>
+        <T v="small" style={{ fontSize: 12 }}>
+          100 g · P {food.p} · C {food.c} · G {food.g}
+          {food.custom ? ' · personalizado' : ''}
+        </T>
+      </View>
+      <T v="h3">{Math.round(food.kcal)}</T>
+      <T v="small" style={{ fontSize: 11 }}>
+        kcal
+      </T>
+    </Pressable>
+  );
+});
 
 function QuantityPanel({
   food,

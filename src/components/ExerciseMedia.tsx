@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { EXERCISE_IMAGES } from '../data/exerciseImages';
 import { Exercise, GROUP_LABEL } from '../data/types';
@@ -13,8 +14,10 @@ import { colors, radius } from '../theme';
  */
 export function ExerciseAnimation({ exercise, height = 240 }: { exercise: Exercise; height?: number }) {
   const frames = exercise.img ? EXERCISE_IMAGES[exercise.img] : undefined;
+  const reduced = useReducedMotion();
   const [frame, setFrame] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  // Com "reduzir animações" o movimento não começa sozinho, mas continua a um toque de distância.
+  const [playing, setPlaying] = useState(!reduced);
   const [speed, setSpeed] = useState<'lento' | 'normal'>('normal');
 
   useEffect(() => {
@@ -35,7 +38,7 @@ export function ExerciseAnimation({ exercise, height = 240 }: { exercise: Exerci
 
   return (
     <View style={[styles.wrap, { height }]}>
-      <Image source={frames[frame]} style={StyleSheet.absoluteFill} contentFit="cover" transition={350} />
+      <Image source={frames[frame]} style={StyleSheet.absoluteFill} contentFit="cover" transition={reduced ? 0 : { duration: 350, effect: 'cross-dissolve', timing: 'ease-in-out' }} />
       <View style={styles.overlay}>
         <View style={styles.pill}>
           <Text style={styles.pillText}>{frame === 0 ? 'Posição inicial' : 'Posição final'}</Text>

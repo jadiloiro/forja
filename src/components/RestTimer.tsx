@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
-import Animated, { Easing, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { AppState, StyleSheet, Text, Vibration, View } from 'react-native';
+import Animated, { Easing, FadeInDown, FadeOut, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { formatClock } from '../lib/date';
 import { playRestSound } from '../lib/restAlarm';
@@ -9,7 +9,43 @@ import { setRestTimerOnScreen } from '../lib/restNotifications';
 import { AVISO_SEG, restSoundOf, shouldAlertNow } from '../lib/restSounds';
 import { useStore } from '../store/useStore';
 import { colors, family, radius, space } from '../theme';
-import { ProgressBar } from './ui';
+import { AnimatedPressable, EASE_OUT, tap } from './ui';
+
+/**
+ * Anda sozinha na thread nativa, do ponto atual até o fim do descanso: continua lisa mesmo com o JS ocupado.
+ * É a informação do tempo restante, não um enfeite, por isso não para com "reduzir animações".
+ */
+function RestProgress({ ate, total, color }: { ate: number; total: number; color: string }) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    const left = Math.max(0, ate - Date.now());
+    progress.set(total > 0 ? Math.max(0, 1 - left / (total * 1000)) : 1);
+    progress.set(withTiming(1, { duration: left, easing: Easing.linear, reduceMotion: ReduceMotion.Never }));
+  }, [ate, total, progress]);
+  const fill = useAnimatedStyle(() => ({ width: `${progress.get() * 100}%` }));
+  return (
+    <View style={styles.track}>
+      {/* Preenchimento absoluto e sem filhos: animar width aqui não reflui o layout. */}
+      <Animated.View style={[styles.fill, { backgroundColor: color }, fill]} />
+    </View>
+  );
+}
+
+function RestButton({ title, onPress, primary }: { title: string; onPress: () => void; primary?: boolean }) {
+  return (
+    <AnimatedPressable
+      scaleTo={0.94}
+      style={[styles.btn, primary && { backgroundColor: colors.accent }]}
+      hitSlop={6}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+    >
+      <Text style={[styles.btnText, primary && { color: colors.accentText }]}>{title}</Text>
+    </AnimatedPressable>
+  );
+}
 
 export function RestTimer() {
   const ate = useStore((s) => s.session?.descansoAte);
@@ -71,20 +107,21 @@ export function RestTimer() {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>{done ? 'Descanso concluído — bora!' : 'Descanso'}</Text>
-          <Text style={[styles.clock, done && { color: colors.success }]}>{done ? '0:00' : formatClock(remaining)}</Text>
+          <Animated.Text
+            style={[
+              styles.clock,
+              { color: done ? colors.success : colors.text, transitionProperty: 'color', transitionDuration: 200, transitionTimingFunction: EASE_OUT },
+            ]}
+          >
+            {done ? '0:00' : formatClock(remaining)}
+          </Animated.Text>
         </View>
-        <Pressable style={styles.btn} onPress={() => adjust(-15)} hitSlop={6}>
-          <Text style={styles.btnText}>−15</Text>
-        </Pressable>
-        <Pressable style={styles.btn} onPress={() => adjust(15)} hitSlop={6}>
-          <Text style={styles.btnText}>+15</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, { backgroundColor: colors.accent }]} onPress={clear} hitSlop={6}>
-          <Text style={[styles.btnText, { color: colors.accentText }]}>Pular</Text>
-        </Pressable>
+        <RestButton title="−15" onPress={() => adjust(-15)} />
+        <RestButton title="+15" onPress={() => adjust(15)} />
+        <RestButton title="Pular" onPress={clear} primary />
       </View>
       <View style={{ marginTop: space.sm }}>
-        <ProgressBar value={total > 0 ? 1 - Math.max(0, remaining) / total : 1} color={done ? colors.success : colors.accent} animated={false} />
+        <RestProgress ate={ate} total={total} color={done ? colors.success : colors.accent} />
       </View>
     </Animated.View>
   );
@@ -106,8 +143,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
   },
+  track: { height: 6, borderRadius: 6, backgroundColor: colors.surface3, overflow: 'hidden' },
+  fill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 6 },
   label: { color: colors.textDim, fontSize: 12, fontWeight: '600' },
-  clock: { color: colors.text, fontSize: 36, lineHeight: 40, fontFamily: family.display, fontVariant: ['tabular-nums'] },
+  clock: { fontSize: 36, lineHeight: 40, fontFamily: family.display, fontVariant: ['tabular-nums'] },
   btn: { height: 40, minWidth: 48, paddingHorizontal: 10, borderRadius: radius.md, backgroundColor: colors.surface3, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: colors.text, fontWeight: '700' },
 });
