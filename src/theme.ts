@@ -7,14 +7,18 @@ export const colors = {
   text: '#F4F1EA',
   textDim: '#A3A8B0',
   textMute: '#6E747D',
-  accent: '#FF6A2B',
-  accentSoft: 'rgba(255,106,43,0.14)',
-  accentText: '#1A0E07',
+  // Nenhum vermelho único tem contraste 4,5:1 com texto branco e também sobre os fundos escuros:
+  // accent é para texto e ícones sobre o fundo; accentFill, para preencher com accentText por cima.
+  accent: '#F2545B',
+  accentFill: '#D62F33',
+  accentSoft: 'rgba(242,84,91,0.14)',
+  accentText: '#FFFFFF',
   success: '#3DD68C',
   successSoft: 'rgba(61,214,140,0.14)',
   warn: '#F5B83D',
-  danger: '#FF5A52',
-  dangerSoft: 'rgba(255,90,82,0.14)',
+  // Rosa, não vermelho: excluir não pode se confundir com o botão principal.
+  danger: '#FF4D8D',
+  dangerSoft: 'rgba(255,77,141,0.14)',
   protein: '#6AB0FF',
   carb: '#F5B83D',
   fat: '#E77BD6',

@@ -35,7 +35,7 @@ function RestButton({ title, onPress, primary }: { title: string; onPress: () =>
   return (
     <AnimatedPressable
       scaleTo={0.94}
-      style={[styles.btn, primary && { backgroundColor: colors.accent }]}
+      style={[styles.btn, primary && { backgroundColor: colors.accentFill }]}
       hitSlop={6}
       onPress={() => {
         tap();
