@@ -19,9 +19,16 @@ npx expo lint               # lint
 npx tsc --noEmit            # typecheck
 npx expo-doctor             # diagnose dependency and config issues
 npx expo install --fix      # fix incompatible package versions
+npm test                    # run unit tests
+npm run test:coverage       # run unit tests and enforce the coverage threshold
 ```
 
-Run lint and typecheck before declaring any task done.
+Run lint, typecheck and tests before declaring any task done.
+
+## Tests
+
+- New functions in `src/lib` must come with tests in `src/lib/__tests__/<module>.test.ts`.
+- If a change alters the persisted state, keep `src/store/__tests__/persist.test.ts` loading the old data: add a `migrate` when bumping the `persist` version, never edit the old fixture to make the test pass.
 
 ## Navigation & Routing
 

@@ -39,6 +39,12 @@ jobs:
       - name: Checar tipos
         run: npx tsc --noEmit
 
+      - name: Checar lint
+        run: npm run lint
+
+      - name: Rodar testes
+        run: npm run test:coverage -- --ci
+
       - name: Gerar projeto Android (expo prebuild)
         run: npx expo prebuild --platform android --clean --no-install
         env:
