@@ -7,7 +7,7 @@ import { showDialog } from '../components/Dialog';
 import { Button, Card, Chip, ChipRow, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
 import { hcGranted, hcOpenSettings, hcRequest, hcStatus, insertTestData, PERMISSIONS } from '../lib/healthConnect';
-import { pullWeights } from '../lib/healthSync';
+import { lastSyncError, pullWeights } from '../lib/healthSync';
 import { computeTargets } from '../lib/nutrition';
 import { draftErrors, fromDraft, ProfileDraft, toDraft } from '../lib/profileDraft';
 import { playRestSound } from '../lib/restAlarm';
@@ -251,12 +251,16 @@ function Integracoes() {
   const ligado = useStore((s) => !!s.settings.healthConnect);
   const updateSettings = useStore((s) => s.updateSettings);
   const [granted, setGranted] = useState<Set<string>>();
+  const [erro, setErro] = useState<string>();
   const [busy, setBusy] = useState(false);
 
   // As permissões podem ser revogadas no Health Connect com o Forja aberto ao fundo.
   useEffect(() => {
     if (!ligado) return;
-    const check = () => hcGranted().then(setGranted).catch(() => {});
+    const check = () => {
+      setErro(lastSyncError());
+      hcGranted().then(setGranted).catch(() => {});
+    };
     check();
     const sub = AppState.addEventListener('change', (st) => st === 'active' && check());
     return () => sub.remove();
@@ -305,6 +309,11 @@ function Integracoes() {
                 Sem permissão para: {faltando.map((k) => ROTULOS[k].toLowerCase()).join(', ')}.
               </T>
             )}
+            {erro ? (
+              <T v="small" style={{ color: colors.warn }}>
+                Última sincronização falhou: {erro}
+              </T>
+            ) : null}
             <T v="small">
               Os dados do relógio chegam depois que ele sincroniza com o Samsung Health. Passos e calorias gastas aparecem só como
               informação e não mudam sua meta de calorias.

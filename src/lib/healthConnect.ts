@@ -144,8 +144,10 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
  * Um registro de nutrição por refeição do dia. `version` precisa crescer a cada envio:
  * o Health Connect só substitui um registro do mesmo `clientRecordId` por um de versão maior.
  * Devolve também as refeições vazias, que precisam ser apagadas de lá.
+ * O Health Connect recusa horários no futuro: a refeição cujo horário típico ainda não chegou
+ * vai com o horário de agora.
  */
-export function mealRecords(data: string, day: DayLog | undefined, version: number) {
+export function mealRecords(data: string, day: DayLog | undefined, version: number, now = Date.now()) {
   const records: HC.NutritionRecord[] = [];
   const vazias: string[] = [];
   for (const { key: refeicao, nome } of MEALS) {
@@ -162,9 +164,11 @@ export function mealRecords(data: string, day: DayLog | undefined, version: numb
       { kcal: 0, p: 0, c: 0, g: 0 },
     );
     const [h, m] = MEAL_TIME[refeicao];
-    const start = fromKey(data);
-    start.setHours(h, m, 0, 0);
-    const end = new Date(start.getTime() + 15 * 60_000);
+    const tipico = fromKey(data);
+    tipico.setHours(h, m, 0, 0);
+    const fim = Math.min(tipico.getTime() + 15 * 60_000, now);
+    const start = new Date(fim - 15 * 60_000);
+    const end = new Date(fim);
     const alimentos = entries.map((e) => e.snapshot.nome).join(', ');
     records.push({
       recordType: 'Nutrition',
