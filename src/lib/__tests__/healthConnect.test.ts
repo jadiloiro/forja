@@ -253,7 +253,7 @@ describe('com o Health Connect', () => {
     const l = fakeLib();
     use(l);
     expect(await hcRequest()).toEqual(new Set(['write:Nutrition']));
-    expect(l.requestPermission.mock.calls[0][0]).toHaveLength(6);
+    expect(l.requestPermission.mock.calls[0][0]).toHaveLength(10);
     expect(await hcGranted()).toEqual(new Set(['read:Weight']));
     expect(l.initialize).toHaveBeenCalledTimes(1);
     hcOpenSettings();
