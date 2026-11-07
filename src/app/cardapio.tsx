@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { showDialog } from '../components/Dialog';
 import { MacroBars } from '../components/nutrition';
@@ -172,7 +172,7 @@ function ItemModal({
   const m = item ? macrosFor(item.food, grams || 0) : undefined;
   return (
     <Modal visible={!!item} transparent animationType="fade" onRequestClose={onClose} onShow={() => setG(String(item?.gramas ?? ''))}>
-      <View style={styles.modalBg}>
+      <KeyboardAvoidingView behavior="padding" style={styles.modalBg}>
         <View style={styles.modal}>
           <T v="h2">{item?.food.nome}</T>
           <TextInput value={g} onChangeText={setG} keyboardType="decimal-pad" selectTextOnFocus style={styles.gramInput} placeholderTextColor={colors.textMute} />
@@ -180,7 +180,7 @@ function ItemModal({
             gramas · {Math.round(m?.kcal ?? 0)} kcal · P {Math.round(m?.p ?? 0)} · C {Math.round(m?.c ?? 0)} · G {Math.round(m?.g ?? 0)}
           </T>
           {options.length > 0 && (
-            <View style={{ marginTop: space.md, gap: space.xs }}>
+            <View style={{ flexShrink: 1, marginTop: space.md, gap: space.xs }}>
               <T v="tiny">Trocar por equivalente</T>
               <ScrollView style={{ maxHeight: 180 }} keyboardShouldPersistTaps="handled">
                 {options.map((f) => (
@@ -223,7 +223,7 @@ function ItemModal({
             />
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: space.lg },
-  modal: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.xl, gap: space.sm },
+  modal: { flexShrink: 1, backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.xl, gap: space.sm },
   gramInput: {
     color: colors.text,
     fontSize: 44,
