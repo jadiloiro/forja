@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { Ring } from '../../components/charts';
+import { TodayHealthCards } from '../../components/health';
 import { MacroBars, WaterCard } from '../../components/nutrition';
 import { Button, Card, Field, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { dateKey, weekStart } from '../../lib/date';
@@ -137,6 +138,8 @@ export default function Hoje() {
           <WaterCard date={today} style={{ marginTop: space.md }} />
         </>
       )}
+
+      <TodayHealthCards />
 
       <SectionHeader title="Peso corporal" action="Ver evolução" onAction={() => router.push('/(tabs)/progresso')} />
       <Card style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.sm }}>

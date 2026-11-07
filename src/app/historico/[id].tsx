@@ -6,6 +6,7 @@ import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 
 import { showDialog } from '../../components/Dialog';
 import { ExerciseThumb } from '../../components/ExerciseMedia';
+import { HeartRateStats } from '../../components/health';
 import { Badge, Button, Card, Empty, IconButton, Screen, SectionHeader, T } from '../../components/ui';
 import { formatDateTime, formatDuration } from '../../lib/date';
 import { e1rm, fmtKg, personalRecords, round, workingSets } from '../../lib/progression';
@@ -108,6 +109,7 @@ export default function HistoricoDetalhe() {
         <Stat label="Séries" value={String(sets)} />
         <Stat label="Volume" value={`${rec.volumeKg.toLocaleString('pt-BR')} kg`} />
       </View>
+      <HeartRateStats inicio={rec.inicio} fim={rec.fim} />
 
       {rec.nota ? (
         <Card style={{ marginTop: space.md }}>

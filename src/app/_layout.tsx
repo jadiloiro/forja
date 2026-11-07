@@ -7,6 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DialogHost } from '../components/Dialog';
+import { startHealthSync } from '../lib/healthSync';
 import { startRestNotifications } from '../lib/restNotifications';
 import { startPersistFlush, useHydrated } from '../store/useStore';
 import { colors } from '../theme';
@@ -31,6 +32,7 @@ export default function RootLayout() {
   const hydrated = storeReady && (fontsLoaded || !!fontError);
 
   useEffect(() => (storeReady ? startRestNotifications() : undefined), [storeReady]);
+  useEffect(() => (storeReady ? startHealthSync() : undefined), [storeReady]);
   useEffect(startPersistFlush, []);
 
   // Transições nativas: telas entram pela direita e modais por baixo; com "reduzir animações", só fade.

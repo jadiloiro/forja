@@ -174,4 +174,8 @@ export interface Settings {
   somDescansoId?: RestSoundId;
   /** Toque curto 10 s antes do fim. Ausente = desligado. */
   avisoDezSeg?: boolean;
+  /** Integração com o Health Connect (Samsung Health e relógio). Ausente = desligada. */
+  healthConnect?: boolean;
+  /** Horário (ISO) da última medição de peso importada do Health Connect. */
+  hcPesoAte?: string;
 }
