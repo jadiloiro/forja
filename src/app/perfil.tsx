@@ -6,6 +6,8 @@ import { ActivityStep, BasicsStep, BodyStep, GoalStep, HealthStep, LevelStep, Pr
 import { showDialog } from '../components/Dialog';
 import { Button, Card, Chip, ChipRow, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
+import { hcGranted, hcOpenSettings, hcRequest, hcStatus, PERMISSIONS } from '../lib/healthConnect';
+import { pullWeights } from '../lib/healthSync';
 import { computeTargets } from '../lib/nutrition';
 import { draftErrors, fromDraft, ProfileDraft, toDraft } from '../lib/profileDraft';
 import { playRestSound } from '../lib/restAlarm';
@@ -160,6 +162,8 @@ export default function Perfil() {
         )}
       </Card>
 
+      {Platform.OS === 'android' && <Integracoes />}
+
       <SectionHeader title="Backup dos dados" />
       <Card style={{ gap: space.md }}>
         <T v="small">Seus dados ficam só neste aparelho. Salve um arquivo de backup no Drive, e-mail ou WhatsApp para não perder o histórico. O arquivo inclui medicamentos e condições de saúde, se você os informou: guarde em um lugar de confiança.</T>
@@ -230,5 +234,106 @@ function ToggleRow({ label, hint, value, onChange }: { label: string; hint?: str
       </View>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.accent, false: colors.surface3 }} thumbColor="#fff" />
     </View>
+  );
+}
+
+const ROTULOS: Record<string, string> = {
+  'read:Weight': 'Ler peso',
+  'read:HeartRate': 'Ler frequência cardíaca',
+  'read:SleepSession': 'Ler sono',
+  'read:Steps': 'Ler passos',
+  'write:ExerciseSession': 'Gravar treinos',
+  'write:Nutrition': 'Gravar refeições',
+};
+
+/** Samsung Health e Galaxy Fit3, pelo Health Connect. Desligado por padrão. */
+function Integracoes() {
+  const ligado = useStore((s) => !!s.settings.healthConnect);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const [granted, setGranted] = useState<Set<string>>();
+  const [busy, setBusy] = useState(false);
+
+  // As permissões podem ser revogadas no Health Connect com o Forja aberto ao fundo.
+  useEffect(() => {
+    if (!ligado) return;
+    const check = () => hcGranted().then(setGranted).catch(() => {});
+    check();
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check());
+    return () => sub.remove();
+  }, [ligado]);
+
+  const ligar = async () => {
+    const status = await hcStatus();
+    if (status === 'atualizar') {
+      return showDialog('Atualize o Health Connect', 'Atualize o app Health Connect pela Play Store e tente de novo.');
+    }
+    if (status === 'indisponivel') {
+      return showDialog(
+        'Health Connect indisponível',
+        'A integração precisa do APK do Forja (não funciona no Expo Go) e do Health Connect, que já vem no Android 14 ou mais novo.',
+      );
+    }
+    setBusy(true);
+    try {
+      const ok = await hcRequest();
+      setGranted(ok);
+      if (!ok.size) return showDialog('Nenhuma permissão concedida', 'A integração continua desligada.');
+      updateSettings({ healthConnect: true });
+    } catch (e) {
+      showDialog('Não foi possível conectar', e instanceof Error ? e.message : undefined);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const faltando = granted ? PERMISSIONS.map((p) => `${p.accessType}:${p.recordType}`).filter((k) => !granted.has(k)) : [];
+
+  return (
+    <>
+      <SectionHeader title="Integrações" />
+      <Card style={{ gap: space.md }}>
+        <ToggleRow
+          label="Samsung Health e relógio"
+          hint="Pelo Health Connect: lê peso, frequência cardíaca, sono e passos, e grava seus treinos e refeições."
+          value={ligado}
+          onChange={(v) => (v ? ligar() : updateSettings({ healthConnect: false }))}
+        />
+        {ligado && (
+          <>
+            {faltando.length > 0 && (
+              <T v="small" style={{ color: colors.warn }}>
+                Sem permissão para: {faltando.map((k) => ROTULOS[k].toLowerCase()).join(', ')}.
+              </T>
+            )}
+            <T v="small">
+              Os dados do relógio chegam depois que ele sincroniza com o Samsung Health. Passos e calorias gastas aparecem só como
+              informação e não mudam sua meta de calorias.
+            </T>
+            <View style={{ flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' }}>
+              <Button
+                small
+                variant="secondary"
+                icon="sync-outline"
+                title="Buscar peso agora"
+                loading={busy}
+                onPress={async () => {
+                  setBusy(true);
+                  try {
+                    const n = await pullWeights();
+                    showDialog(n ? `${n} ${n > 1 ? 'pesos importados' : 'peso importado'}` : 'Nenhum peso novo', undefined);
+                  } catch (e) {
+                    showDialog('Não foi possível ler o peso', e instanceof Error ? e.message : undefined);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+              {faltando.length > 0 && <Button small variant="secondary" icon="key-outline" title="Conceder permissões" onPress={ligar} />}
+            </View>
+          </>
+        )}
+        <Button small variant="ghost" icon="open-outline" title="Gerenciar ou revogar permissões" onPress={hcOpenSettings} />
+      </Card>
+    </>
   );
 }

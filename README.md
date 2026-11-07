@@ -17,6 +17,12 @@ App Android (Expo / React Native) para montar, executar e acompanhar treinos de 
 - **Cardápio sugerido**: monta um dia de refeições brasileiras que bate as metas (±5% de calorias e proteína), respeita os alimentos que você não come, permite trocar por equivalentes e aplica ao diário com um toque.
 - Diário por refeição com **~600 alimentos da Tabela TACO** (valores brasileiros) + suplementos comuns, porções caseiras, alimentos personalizados a partir do rótulo, "repetir de ontem" e controle de água.
 
+**Samsung Health e relógio (opcional)**
+- Pelo **Health Connect**, ligado em Perfil → Integrações. O Galaxy Fit3 não aceita apps de terceiros, então o caminho é relógio → Samsung Health → Health Connect → Forja.
+- Lê o peso (atualiza o histórico e as metas), a frequência cardíaca média e o pico de cada treino, os passos de hoje e o sono da última noite.
+- Grava no Health Connect os treinos finalizados e as refeições do diário, que aparecem no Samsung Health.
+- Passos e calorias gastas são só informação: não mudam a meta de calorias.
+
 **Dados**
 - Backup/restauração em JSON pela tela de Perfil.
 
@@ -29,7 +35,9 @@ npm install
 npx expo start            # leia o QR code com o Expo Go
 ```
 
-O Expo Go é o caminho mais rápido para desenvolver, mas é mais lento que o APK e não usa as configurações nativas do `app.json`. Os sons próprios do alarme de descanso com o app minimizado, por exemplo, só funcionam no APK ou em um build instalado.
+O Expo Go é o caminho mais rápido para desenvolver, mas é mais lento que o APK e não usa as configurações nativas do `app.json`. Os sons próprios do alarme de descanso com o app minimizado, por exemplo, só funcionam no APK ou em um build instalado. A integração com o Samsung Health também: no Expo Go o app abre normalmente, mas o Health Connect aparece como indisponível. Para testá-la, use o APK.
+
+O APK exige Android 8.0 ou mais novo (o Health Connect pede `minSdkVersion` 26). No Android 13 ou mais antigo, instale o app Health Connect pela Play Store; do 14 em diante ele já vem no sistema.
 
 Para compilar e instalar no emulador ou no celular conectado por USB (requer Android Studio): `npx expo run:android`.
 

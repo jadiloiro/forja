@@ -22,7 +22,13 @@
       "versionCode": 1,
       "permissions": [
         "VIBRATE",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.WRITE_EXERCISE",
+        "android.permission.health.WRITE_NUTRITION"
       ]
     },
     "web": {
@@ -52,6 +58,15 @@
           "microphonePermission": false,
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ],
