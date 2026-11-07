@@ -52,7 +52,7 @@ jobs:
 
       - name: Compilar APK de release
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
 
       - name: Renomear APK
         run: |
