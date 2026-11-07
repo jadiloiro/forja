@@ -74,6 +74,8 @@ describe('sessionRecord', () => {
   });
 });
 
+const DEPOIS = new Date(2026, 10, 8).getTime();
+
 describe('mealRecords', () => {
   const day: DayLog = {
     aguaMl: 500,
@@ -81,7 +83,7 @@ describe('mealRecords', () => {
   };
 
   it('gera um registro por refeição com os totais e o horário típico', () => {
-    const { records } = mealRecords('2026-11-07', day, 5);
+    const { records } = mealRecords('2026-11-07', day, 5, DEPOIS);
     expect(records).toHaveLength(2);
     const cafe = records[0];
     expect(cafe.mealType).toBe(1);
@@ -98,7 +100,7 @@ describe('mealRecords', () => {
   });
 
   it('lista as refeições vazias para apagar lá', () => {
-    const { vazias } = mealRecords('2026-11-07', day, 1);
+    const { vazias } = mealRecords('2026-11-07', day, 1, DEPOIS);
     expect(vazias).toHaveLength(4);
     expect(vazias).toContain('forja-refeicao-2026-11-07-almoco');
     expect(vazias).not.toContain('forja-refeicao-2026-11-07-cafe');
@@ -106,6 +108,14 @@ describe('mealRecords', () => {
 
   it('dia sem registro apaga todas as refeições', () => {
     expect(mealRecords('2026-11-07', undefined, 1)).toEqual({ records: [], vazias: expect.arrayContaining([mealClientId('2026-11-07', 'ceia')]) });
+  });
+
+  it('refeição cujo horário ainda não chegou vai com o horário de agora', () => {
+    const agora = new Date(2026, 10, 7, 15, 41).getTime();
+    const { records } = mealRecords('2026-11-07', day, 1, agora);
+    expect(new Date(records[0].startTime).getHours()).toBe(7);
+    expect(records[1].endTime).toBe(new Date(agora).toISOString());
+    expect(Date.parse(records[1].endTime) - Date.parse(records[1].startTime)).toBe(15 * 60_000);
   });
 
   it('limita o tamanho do nome', () => {

@@ -1,9 +1,9 @@
 import { AppState } from 'react-native';
 
 import { useStore } from '../../store/useStore';
-import { dateKey } from '../date';
+import { addDays, dateKey } from '../date';
 import * as hc from '../healthConnect';
-import { pullWeights, startHealthSync } from '../healthSync';
+import { lastSyncError, pullWeights, startHealthSync } from '../healthSync';
 import { SessionRecord } from '../trainingTypes';
 
 jest.mock('../healthConnect', () => ({
@@ -156,6 +156,31 @@ describe('startHealthSync', () => {
     useStore.getState().addWater(hoje, 100);
     listeners.forEach((l) => l('background'));
     expect(mocked.writeDiaryDay).toHaveBeenCalledTimes(2);
+  });
+
+  it('não envia dias futuros do diário', async () => {
+    jest.useFakeTimers();
+    ligar();
+    stop = startHealthSync();
+    useStore.getState().addWater(addDays(dateKey(), 1), 250);
+    jest.advanceTimersByTime(5000);
+    expect(mocked.writeDiaryDay).not.toHaveBeenCalled();
+  });
+
+  it('guarda o último erro e limpa quando volta a funcionar', async () => {
+    ligar();
+    stop = startHealthSync();
+    mocked.writeSession.mockRejectedValueOnce(new Error('SecurityException'));
+    useStore.setState({ history: [rec('x', new Date().toISOString())] });
+    await flush();
+    expect(lastSyncError()).toBe('treino: SecurityException');
+    mocked.writeSession.mockRejectedValueOnce('texto');
+    useStore.setState({ history: [rec('y', new Date().toISOString()), ...useStore.getState().history] });
+    await flush();
+    expect(lastSyncError()).toBe('treino: texto');
+    useStore.setState({ history: [rec('z', new Date().toISOString()), ...useStore.getState().history] });
+    await flush();
+    expect(lastSyncError()).toBeUndefined();
   });
 
   it('não reenvia dias antigos do diário', async () => {
