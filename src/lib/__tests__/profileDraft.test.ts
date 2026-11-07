@@ -25,6 +25,7 @@ const COMPLETO: Profile = {
   lesoes: ['joelho'],
   sonoHoras: 7.5,
   apetite: 'baixo',
+  alimentosExcluidos: ['peixe', 'leite'],
 };
 
 const draft = (patch: Partial<ProfileDraft> = {}): ProfileDraft => ({ ...toDraft(ANTIGO), ...patch });
@@ -78,10 +79,15 @@ describe('campos novos', () => {
     expect(p.medicamentos).toEqual([{ nome: 'Metformina', dose: '500 mg', frequencia: undefined }]);
   });
 
-  test('sem nenhum medicamento ou lesão, os campos ficam de fora', () => {
-    const p = fromDraft(draft({ medicamentos: [{ nome: ' ' }], lesoes: [] }));
+  test('sem nenhum medicamento, lesão ou exclusão, os campos ficam de fora', () => {
+    const p = fromDraft(draft({ medicamentos: [{ nome: ' ' }], lesoes: [], alimentosExcluidos: ' , ' }));
     expect(p.medicamentos).toBeUndefined();
     expect(p.lesoes).toBeUndefined();
+    expect(p.alimentosExcluidos).toBeUndefined();
+  });
+
+  test('alimentos excluídos são separados por vírgula, sem espaços nem itens vazios', () => {
+    expect(fromDraft(draft({ alimentosExcluidos: ' peixe,, leite , ovos ' })).alimentosExcluidos).toEqual(['peixe', 'leite', 'ovos']);
   });
 });
 

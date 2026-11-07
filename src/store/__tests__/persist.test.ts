@@ -199,6 +199,38 @@ describe('gravação no aparelho', () => {
   });
 });
 
+describe('aplicar cardápio ao diário', () => {
+  const DATA = '2026-01-02';
+  const entrada = (foodId: string) => ({ foodId, gramas: 100, refeicao: 'almoco' as const, snapshot: { nome: foodId, kcal: 100, p: 10, c: 10, g: 1 } });
+
+  beforeEach(() => {
+    useStore.setState({ nutrition: { [DATA]: { aguaMl: 500, entries: [{ ...entrada('antigo'), id: 'a1' }] } }, recentFoodIds: ['r1'] });
+  });
+
+  test('somar mantém o que já estava registrado e a água', () => {
+    useStore.getState().applyMealPlan(DATA, [entrada('novo')], false);
+    const dia = useStore.getState().nutrition[DATA];
+    expect(dia.entries.map((e) => e.foodId)).toEqual(['antigo', 'novo']);
+    expect(dia.aguaMl).toBe(500);
+  });
+
+  test('substituir troca os registros, mas mantém a água', () => {
+    useStore.getState().applyMealPlan(DATA, [entrada('novo')], true);
+    const dia = useStore.getState().nutrition[DATA];
+    expect(dia.entries.map((e) => e.foodId)).toEqual(['novo']);
+    expect(dia.aguaMl).toBe(500);
+  });
+
+  test('funciona em um dia sem registros, com ids únicos e sem mexer nos recentes', () => {
+    useStore.getState().applyMealPlan('2026-01-03', [entrada('a'), entrada('b')], false);
+    const s = useStore.getState();
+    const ids = s.nutrition['2026-01-03'].entries.map((e) => e.id);
+    expect(new Set(ids).size).toBe(2);
+    expect(s.nutrition['2026-01-03'].aguaMl).toBe(0);
+    expect(s.recentFoodIds).toEqual(['r1']);
+  });
+});
+
 describe('alterações na sessão', () => {
   test('mudar uma série mantém os outros exercícios e séries iguais, para não renderizá-los de novo', async () => {
     await carregar(SALVO_NA_V1);
@@ -245,6 +277,7 @@ describe('backup', () => {
         lesoes: ['joelho'],
         sonoHoras: 7,
         apetite: 'baixo',
+        alimentosExcluidos: ['peixe'],
       },
       plans: SALVO_NA_V1.state.plans,
       activePlanId: 'p1',

@@ -66,6 +66,7 @@ export default function RootLayout() {
             <Stack.Screen name="alimento" options={{ title: 'Adicionar alimento', ...modal }} />
             <Stack.Screen name="novo-alimento" options={{ title: 'Alimento personalizado', ...modal }} />
             <Stack.Screen name="metas" options={{ title: 'Metas de nutrição' }} />
+            <Stack.Screen name="cardapio" options={{ title: 'Cardápio sugerido' }} />
             <Stack.Screen name="perfil" options={{ title: 'Perfil e configurações' }} />
             <Stack.Screen name="planos" options={{ title: 'Meus planos' }} />
             <Stack.Screen name="historico/[id]" options={{ title: 'Treino realizado' }} />

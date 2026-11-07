@@ -39,6 +39,8 @@ export interface Profile {
   lesoes?: RegiaoCorporal[];
   sonoHoras?: number;
   apetite?: Apetite;
+  /** O que a pessoa não come, em texto livre. O cardápio sugerido respeita. */
+  alimentosExcluidos?: string[];
 }
 
 export const RITMO_LABEL: Record<Ritmo, string> = { leve: 'Leve', moderado: 'Moderado', acelerado: 'Acelerado' };
