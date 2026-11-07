@@ -41,6 +41,11 @@ export const PERMISSIONS: HC.Permission[] = [
   { accessType: 'read', recordType: 'Steps' },
   { accessType: 'write', recordType: 'ExerciseSession' },
   { accessType: 'write', recordType: 'Nutrition' },
+  // TEMPORARIO, so na branch de teste do emulador
+  { accessType: 'write', recordType: 'Weight' },
+  { accessType: 'write', recordType: 'HeartRate' },
+  { accessType: 'write', recordType: 'Steps' },
+  { accessType: 'write', recordType: 'SleepSession' },
 ];
 
 export type HcStatus = 'indisponivel' | 'atualizar' | 'disponivel';
@@ -298,4 +303,25 @@ export async function writeDiaryDay(data: string, day: DayLog | undefined, versi
   const { records, vazias } = mealRecords(data, day, version);
   if (records.length) await m.insertRecords(records);
   if (vazias.length) await m.deleteRecordsByUuids('Nutrition', [], vazias);
+}
+
+/** TEMPORARIO: dados falsos para testar a leitura no emulador. */
+export async function insertTestData(treino?: { inicio: string; fim: string }): Promise<string> {
+  const m = await client();
+  if (!m) throw new Error('sem cliente');
+  const now = Date.now();
+  const iso = (t: number) => new Date(t).toISOString();
+  await m.insertRecords([
+    { recordType: 'Weight', time: iso(now - 26 * 3_600_000), weight: { value: 84.2, unit: 'kilograms' } },
+    { recordType: 'Weight', time: iso(now - 60_000), weight: { value: 83.7, unit: 'kilograms' } },
+  ]);
+  const ini = treino ? Date.parse(treino.inicio) : now - 3_600_000;
+  const fim = treino ? Date.parse(treino.fim) : now - 60_000;
+  const n = 12;
+  const samples = Array.from({ length: n }, (_, i) => ({ time: iso(ini + ((fim - ini) * i) / (n - 1)), beatsPerMinute: [98, 112, 125, 140, 151, 163, 158, 147, 132, 128, 119, 105][i] }));
+  await m.insertRecords([{ recordType: 'HeartRate', startTime: iso(ini), endTime: iso(fim), samples }]);
+  const meiaNoite = new Date(); meiaNoite.setHours(0, 0, 0, 0);
+  await m.insertRecords([{ recordType: 'Steps', startTime: iso(meiaNoite.getTime() + 8 * 3_600_000), endTime: iso(meiaNoite.getTime() + 9 * 3_600_000), count: 4321 }]);
+  await m.insertRecords([{ recordType: 'SleepSession', startTime: iso(meiaNoite.getTime() - 90 * 60_000), endTime: iso(meiaNoite.getTime() + 6 * 3_600_000 + 15 * 60_000) }]);
+  return `HR ${iso(ini)} - ${iso(fim)}`;
 }

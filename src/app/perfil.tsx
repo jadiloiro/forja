@@ -6,7 +6,7 @@ import { ActivityStep, BasicsStep, BodyStep, GoalStep, HealthStep, LevelStep, Pr
 import { showDialog } from '../components/Dialog';
 import { Button, Card, Chip, ChipRow, Field, Screen, SectionHeader, Stepper, T } from '../components/ui';
 import { pickBackupFile, saveBackupFile } from '../lib/backupFile';
-import { hcGranted, hcOpenSettings, hcRequest, hcStatus, PERMISSIONS } from '../lib/healthConnect';
+import { hcGranted, hcOpenSettings, hcRequest, hcStatus, insertTestData, PERMISSIONS } from '../lib/healthConnect';
 import { pullWeights } from '../lib/healthSync';
 import { computeTargets } from '../lib/nutrition';
 import { draftErrors, fromDraft, ProfileDraft, toDraft } from '../lib/profileDraft';
@@ -333,6 +333,7 @@ function Integracoes() {
           </>
         )}
         <Button small variant="ghost" icon="open-outline" title="Gerenciar ou revogar permissões" onPress={hcOpenSettings} />
+        <Button small variant="ghost" title="TESTE: inserir dados falsos" onPress={() => insertTestData(useStore.getState().history[0]).then((r) => showDialog('Dados inseridos', r), (e) => showDialog('Erro', String(e)))} />
       </Card>
     </>
   );
